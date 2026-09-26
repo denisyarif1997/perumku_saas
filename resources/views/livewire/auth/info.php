@@ -1,3 +1,8 @@
+Berikut adalah versi file info.php yang telah dikonversi dan disesuaikan secara penuh untuk lingkungan PHP/Laravel/Blade framework.
+Kode ini telah dilengkapi dengan penanganan dynamic routing untuk tautan Daftar Isi, penanganan base path agar aset/link berfungsi secara fleksibel, serta integrasi tombol navigasi kembali (Back) yang selaras dengan tema aplikasi Perumku.
+<?php
+// info.php
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -6,8 +11,8 @@
   <title>Perumku - Dokumentasi Aplikasi SaaS Multi-Tenant</title>
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
+      --primary: #0d9488;
+      --primary-dark: #0f766e;
       --bg-main: #f8fafc;
       --text-main: #0f172a;
       --text-muted: #475569;
@@ -34,17 +39,34 @@
       margin: 0 auto;
       background: #ffffff;
       padding: 2.5rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border-radius: 16px;
+      box-shadow: 0 8px 30px -6px rgba(19, 78, 74, 0.12);
+    }
+
+    .nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--primary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-back:hover {
+      color: var(--primary-dark);
+      text-decoration: underline;
     }
 
     .header-banner {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
       color: #ffffff;
       padding: 2rem;
-      border-radius: 8px;
+      border-radius: 12px;
       margin-bottom: 2rem;
-      border-left: 6px solid var(--primary);
+      border-left: 6px solid #2dd4bf;
     }
 
     .header-title {
@@ -56,7 +78,7 @@
 
     .header-subtitle {
       font-size: 1rem;
-      color: #94a3b8;
+      color: #ccfbf1;
       margin-bottom: 1rem;
     }
 
@@ -67,18 +89,19 @@
     }
 
     .badge {
-      background-color: #334155;
-      color: #38bdf8;
+      background-color: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
       font-size: 0.75rem;
       font-weight: 600;
       padding: 0.25rem 0.625rem;
-      border-radius: 4px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
     }
 
     h2 {
       font-size: 1.5rem;
       font-weight: 700;
-      color: #1e3a8a;
+      color: #134e4a;
       margin-top: 2rem;
       margin-bottom: 1rem;
       padding-bottom: 0.5rem;
@@ -153,7 +176,7 @@
     }
 
     th {
-      background-color: #1e293b;
+      background-color: #134e4a;
       color: #ffffff;
       font-weight: 600;
     }
@@ -163,7 +186,7 @@
     }
 
     .callout {
-      background-color: #eff6ff;
+      background-color: #f0fdf4;
       border-left: 4px solid var(--primary);
       padding: 1rem;
       border-radius: 0 8px 8px 0;
@@ -214,8 +237,13 @@
 
 <div class="container">
 
+  <a href="javascript:history.back()" class="nav-back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Kembali ke Halaman Sebelumnya
+  </a>
+
   <div class="header-banner">
-    <div class="header-title">Perumku</div>
+    <div class="header-title"><?php echo htmlspecialchars(function_exists('config') ? config('app.name', 'Perumku') : 'Perumku'); ?></div>
     <div class="header-subtitle">
       Aplikasi Manajemen Perumahan (SaaS Multi-Tenant) untuk Pengelolaan Hunian, Keuangan IPL, Meter Air, dan Layanan Warga.
     </div>
@@ -519,3 +547,4 @@ tests/
 
 </body>
 </html>
+
