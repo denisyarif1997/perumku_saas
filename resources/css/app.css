@@ -1,0 +1,212 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/* Aktifkan dark mode berbasis class (html.dark) untuk Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+html {
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: #F6F8F7;
+    color: #1E293B;
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+}
+
+@utility pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Sembunyikan scrollbar navbar horizontal resident */
+@utility no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+@utility pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* =========================================================
+   DARK MODE — FULL BLACK (OLED friendly)
+   Semua view memakai warna hardcoded (bg-white, border-[#E2E8F0],
+   text-[#64748B], dst) sehingga dipetakan ulang di html.dark.
+   Palet: hitam murni + permukaan #121212/#1A1A1A + aksen teal.
+   ========================================================= */
+
+html.dark {
+    color-scheme: dark;
+}
+
+/* Toggle transition halus */
+body,
+aside,
+header,
+nav {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* --- Dasar: hitam murni --- */
+html.dark body {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+/* --- Permukaan kartu putih → hitam murni --- */
+html.dark .bg-white,
+html.dark .bg-\[\#F8FAFC\],
+html.dark .bg-\[\#FDFDFC\],
+html.dark .bg-\[\#F6F8F7\],
+html.dark .bg-\[\#dbdbd7\] {
+    background-color: #000000 !important;
+}
+
+/* --- Permukaan sekunder (chips, input fill, kotak abu) → abu sangat gelap --- */
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
+html.dark .bg-gray-200 {
+    background-color: #1A1A1A !important;
+}
+
+/* --- Header: SELALU hitam solid di dark mode ---
+   Header resident/admin memakai bg-[#F6F8F7]/80 (terang + opasitas 80%),
+   selectornya beda dari .bg-[#F6F8F7] biasa → harus dioverride langsung
+   di elemen <header> supaya tidak jadi abu-abu karena backdrop-blur. */
+html.dark header,
+html.dark header.bg-white\/80,
+html.dark header.bg-\[\#F6F8F7\]\/80,
+html.dark header.bg-\[\#F6F8F7\]\/85 {
+    background-color: #000000 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom-color: #262626 !important;
+}
+
+/* --- Navbar floating & pill navigasi --- */
+html.dark nav .bg-white\/90,
+html.dark nav .bg-white\/95 {
+    background-color: rgba(10, 10, 10, 0.96) !important;
+}
+
+/* --- Teks utama gelap → putih --- */
+html.dark .text-\[\#0F172A\],
+html.dark .text-\[\#1E293B\],
+html.dark .text-\[\#134E4A\],
+html.dark .text-\[\#1b1b18\],
+html.dark .text-slate-800,
+html.dark .text-slate-900,
+html.dark .text-gray-800,
+html.dark .text-gray-900 {
+    color: #F5F5F5 !important;
+}
+
+/* --- Teks sekunder → putih redup --- */
+html.dark .text-\[\#64748B\],
+html.dark .text-\[\#94A3B8\],
+html.dark .text-\[\#334155\],
+html.dark .text-slate-500,
+html.dark .text-slate-600,
+html.dark .text-slate-700,
+html.dark .text-gray-400,
+html.dark .text-gray-500,
+html.dark .text-gray-600 {
+    color: #A3A3A3 !important;
+}
+
+/* --- Border → abu gelap halus --- */
+html.dark .border-\[\#E2E8F0\],
+html.dark .border-\[\#EEF2F1\],
+html.dark .border-\[\#e3e3e0\],
+html.dark .border-slate-200,
+html.dark .border-gray-200,
+html.dark .border-gray-300 {
+    border-color: #262626 !important;
+}
+
+/* --- CTA hitam/teal tetap teal di dark mode (terlihat di atas hitam) --- */
+html.dark .bg-\[\#0F172A\] {
+    background-color: #14B8A6 !important;
+    color: #04211D !important;
+}
+
+html.dark .bg-teal-700 {
+    background-color: #0D9488 !important;
+}
+
+/* --- Form & input --- */
+html.dark input,
+html.dark select,
+html.dark textarea {
+    background-color: #1A1A1A;
+    border-color: #262626;
+    color: #F5F5F5;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #525252;
+}
+
+/* --- Badge & notifikasi lembut: pertahankan hue, turunkan latar --- */
+html.dark .bg-red-50,
+html.dark .bg-amber-50,
+html.dark .bg-emerald-50,
+html.dark .bg-sky-50,
+html.dark .bg-teal-50 {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark .border-red-200,
+html.dark .border-red-100,
+html.dark .border-amber-200,
+html.dark .border-emerald-200,
+html.dark .border-sky-200 {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* --- Shadow terang di dark mode disamarkan agar tidak "bercahaya" --- */
+html.dark [class*='shadow-teal-'],
+html.dark [class*='shadow-amber-'],
+html.dark [class*='shadow-orange-'],
+html.dark [class*='shadow-sky-'],
+html.dark [class*='shadow-violet-'],
+html.dark [class*='shadow-pink-'],
+html.dark [class*='shadow-slate-'] {
+    --tw-shadow-color: rgba(0, 0, 0, 0.6);
+}
+
+[x-transition] {
+    transition: transform .2s ease, opacity .2s ease;
+}
+
+input, select, textarea, button {
+    font-size: 16px;
+}
+
+@media (min-width: 768px) {
+    input, select, textarea, button {
+        font-size: 14px;
+    }
+    input.form-control, select.form-control, textarea.form-control {
+        font-size: 14px;
+    }
+}
+
