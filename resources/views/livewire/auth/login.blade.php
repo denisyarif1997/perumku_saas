@@ -43,9 +43,9 @@
                 Belum punya akun perumahan?
                 <a href="{{ route('register') }}" class="font-semibold text-teal-700 hover:text-teal-600">Daftar di sini</a>
             </p>
-            <!-- Link ke info.php -->
+            <!-- Link ke info.html di folder public -->
             <p>
-                <a href="info.php" class="inline-flex items-center gap-1 font-medium text-teal-600 hover:text-teal-800 hover:underline">
+                <a href="{{ asset('info.html') }}" target="_blank" class="inline-flex items-center gap-1 font-medium text-teal-600 hover:text-teal-800 hover:underline">
                     <span>Lihat Informasi Aplikasi</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
