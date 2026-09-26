@@ -6,7 +6,9 @@ use App\Models\ActivityLog;
 use App\Models\Post;
 use App\Models\User;
 use App\Notifications\NewForumPost;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -30,6 +32,18 @@ class Index extends Component
     public string $body = '';
 
     public string $category = 'umum';
+
+    /** Postingan ini dibuat sebagai polling, bukan diskusi biasa. */
+    public bool $isPoll = false;
+
+    /** Label pilihan polling yang sedang diketik (minimal dua, tanpa duplikat). */
+    public array $pollChoices = ['', ''];
+
+    /** "single" = satu pilihan, "multiple" = boleh lebih dari satu. */
+    public string $pollType = 'single';
+
+    /** Lama polling dibuka, dalam hari. "0" berarti tanpa batas waktu. */
+    public string $pollDuration = '3';
 
     public function updatedSearch(): void
     {
@@ -82,7 +96,75 @@ class Index extends Component
         $this->showForm = false;
         $this->reset(['title', 'body']);
         $this->category = 'umum';
+        $this->isPoll = false;
+        $this->pollChoices = ['', ''];
+        $this->pollType = 'single';
+        $this->pollDuration = '3';
         $this->resetValidation();
+    }
+
+    /**
+     * Menghapus polling yang sedang disusun tanpa menutup composer.
+     */
+    public function disablePoll(): void
+    {
+        $this->isPoll = false;
+        $this->resetValidation();
+    }
+
+    public function addPollChoice(): void
+    {
+        if (! $this->isPoll || count($this->pollChoices) >= Post::POLL_MAX_OPTIONS) {
+            return;
+        }
+
+        $this->pollChoices[] = '';
+    }
+
+    public function removePollChoice(int $index): void
+    {
+        // Dua pilihan terakhir tidak boleh dihapus: polling butuh minimal dua.
+        if (count($this->pollChoices) <= 2 || ! array_key_exists($index, $this->pollChoices)) {
+            return;
+        }
+
+        unset($this->pollChoices[$index]);
+        $this->pollChoices = array_values($this->pollChoices);
+    }
+
+    /**
+     * Daftar pilihan polling yang sudah dirapikan: tanpa spasi berlebih dan
+     * tanpa label ganda.
+     *
+     * @return array<int, string>
+     */
+    protected function cleanedPollChoices(): array
+    {
+        return collect($this->pollChoices)
+            ->map(fn ($choice) => trim((string) $choice))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{is_poll: bool, poll_type: string, poll_options: ?array, poll_closes_at: ?string, poll_is_closed: bool}
+     */
+    protected function pollAttributes(): array
+    {
+        return [
+            'is_poll' => $this->isPoll,
+            'poll_type' => $this->pollType === 'multiple' ? 'multiple' : 'single',
+            'poll_options' => $this->isPoll
+                ? collect($this->cleanedPollChoices())
+                    ->values()
+                    ->map(fn (string $label, int $index) => ['key' => 'o'.($index + 1), 'label' => $label])
+                    ->all()
+                : null,
+            'poll_closes_at' => $this->pollDuration === '0' ? null : now()->addDays((int) $this->pollDuration),
+            'poll_is_closed' => false,
+        ];
     }
 
     /**
@@ -99,11 +181,27 @@ class Index extends Component
             'title' => ['required', 'string', 'max:150'],
             'body' => ['required', 'string', 'max:3000'],
             'category' => ['required', 'in:'.implode(',', array_keys(Post::categories()))],
+            'pollChoices' => $this->isPoll
+                ? ['array', 'min:2', 'max:'.Post::POLL_MAX_OPTIONS]
+                : ['nullable'],
+            'pollChoices.*' => [$this->isPoll ? 'required' : 'nullable', 'string', 'max:100'],
         ], [
             'title.required' => 'Judul postingan wajib diisi.',
             'body.required' => 'Isi postingan wajib diisi.',
             'category.required' => 'Kategori wajib dipilih.',
+            'pollChoices.min' => 'Polling minimal memiliki dua pilihan.',
+            'pollChoices.max' => 'Pilihan polling maksimal '.Post::POLL_MAX_OPTIONS.'.',
+            'pollChoices.*.required' => 'Pilihan polling tidak boleh kosong.',
+            'pollChoices.*.max' => 'Setiap pilihan polling maksimal 100 karakter.',
         ]);
+
+        // Dua pilihan identik tetap tidak sah karena hanya menyisakan satu
+        // jawaban untuk dipilih warga.
+        if ($this->isPoll && count($this->cleanedPollChoices()) < 2) {
+            throw ValidationException::withMessages([
+                'pollChoices' => 'Polling minimal memiliki dua pilihan yang berbeda.',
+            ]);
+        }
 
         $residentId = (int) $user->resident_id;
         $houseId = DB::table('house_residents')
@@ -125,6 +223,7 @@ class Index extends Component
                 'body' => $data['body'],
                 'category' => $data['category'],
                 'is_pinned' => false,
+                ...$this->pollAttributes(),
             ]);
 
             ActivityLog::record([
@@ -133,7 +232,7 @@ class Index extends Component
                 'module' => 'forum',
                 'subject_type' => Post::class,
                 'subject_id' => $post->id,
-                'description' => 'Postingan forum baru: '.$post->title,
+                'description' => ($post->is_poll ? 'Polling forum baru: ' : 'Postingan forum baru: ').$post->title,
                 'new_values' => $post->toArray(),
             ]);
 
@@ -150,7 +249,9 @@ class Index extends Component
             ->each(fn (User $recipient) => $recipient->notify(new NewForumPost($post, $user->name)));
 
         $this->closeForm();
-        session()->flash('success', 'Postingan berhasil dibagikan ke warga.');
+        session()->flash('success', $post->is_poll
+            ? 'Polling berhasil dibagikan ke warga.'
+            : 'Postingan berhasil dibagikan ke warga.');
         $this->redirectRoute('resident.forum.show', $post, navigate: true);
     }
 
@@ -173,8 +274,9 @@ class Index extends Component
                 'old_values' => $post->toArray(),
             ]);
 
-            // Komentar ikut terhapus (cascade) agar tidak ada komentar yatim.
+            // Komentar dan suara polling ikut terhapus agar tidak ada sisa yatim.
             $post->comments()->delete();
+            $post->deletePollVotes();
             $post->delete();
         });
 
@@ -190,6 +292,7 @@ class Index extends Component
         $query = Post::query()
             ->with(['author', 'resident.houseResidents.house'])
             ->withCount('comments')
+            ->withCount(['votes as poll_voters_count' => fn (Builder $q) => $q->selectRaw('count(distinct resident_id)')])
             ->when($this->search, fn ($q) => $q->where(function ($qq) {
                 $qq->where('title', 'like', "%{$this->search}%")
                     ->orWhere('body', 'like', "%{$this->search}%");
@@ -208,6 +311,7 @@ class Index extends Component
         return view('livewire.resident.forum.index', [
             'posts' => $query->paginate(10),
             'categories' => Post::categories(),
+            'maxPollChoices' => Post::POLL_MAX_OPTIONS,
             'summary' => [
                 'total' => Post::count(),
                 'mine' => Post::where('resident_id', $residentId)->count(),

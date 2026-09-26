@@ -41,7 +41,8 @@ otomatis terait ke pembayaran yang sudah diverifikasi.
 **Info dan Layanan** — pengumuman, serta pengaduan warga dengan balasan dan
 riwayat status.
 
-**Interaksi** — forum warga (dengan komentar), dan permainan catur antar-warga.
+**Interaksi** — forum warga (dengan komentar dan polling), dan permainan catur
+antar-warga.
 
 **Sistem** — manajemen pengguna dan peran, log aktivitas, serta notifikasi.
 
@@ -67,7 +68,7 @@ Ikon memakai [Lucide](https://lucide.dev). Autentikasi, sesi, dan RBAC
 (peran serta permission) dibuat sendiri — tidak memakai paket autentikasi bawaan
 framework.
 
-**Database:** MySQL atau MariaDB. Skema dibuat lewat 39 migrasi.
+**Database:** MySQL atau MariaDB. Skema dibuat lewat 41 migrasi.
 
 ---
 
@@ -212,7 +213,8 @@ Model yang memakai trait:
 ```
 ActivityLog, Announcement, Billing, CashAccount, CashTransaction, ChessGame,
 Complaint, ComplaintResponse, House, HouseResident, HousingBlock, HousingEstate,
-IplRate, Payment, Post, PostComment, Resident, User, WaterMeterReading, WaterRate
+IplRate, Payment, Post, PostComment, PostPollVote, Resident, User,
+WaterMeterReading, WaterRate
 ```
 
 ### 3. Kunci tulis (sisi tulis)
@@ -326,6 +328,23 @@ antar-hook tidak bocor:
 
 Status saat ini: **99 test lulus, 438 assertion**.
 
+### Test polling forum
+
+`tests/Feature/ForumPollTest.php` berisi 20 test untuk polling warga:
+
+- Warga menyusun pilihan polling di composer (tambah/hapus, minimal dua pilihan)
+  lalu membuat polling (2–6 pilihan, satu atau beberapa jawaban, batas waktu)
+- Pilihan kosong atau kembar ditolak, dan tidak ada polling yang tersimpan
+- Suara tersimpan satu baris per pilihan; memilih ulang mengganti suara lama
+- Pilihan yang tidak ada di polling, polling satu jawaban yang dipilih dua kali,
+  dan polling yang sudah ditutup atau lewat batas waktu semuanya ditolak
+- Hasil polling **tidak terlihat** bagi warga yang belum memilih, tetapi terlihat
+  bagi yang sudah memilih, pembuat polling, dan pengelola forum
+- Pembuat polling dan pengelola bisa menutup atau membuka kembali polling,
+  sedangkan warga lain mendapat **403**
+- Menghapus postingan polling juga menghapus seluruh suaranya
+- Suara polling tidak terlihat dari hook lain
+
 ---
 
 ## Struktur Folder
@@ -348,7 +367,7 @@ resources/views/
   components/ui/    Komponen UI, termasuk estate-field
   livewire/         View tiap komponen
 database/
-  migrations/       39 migrasi
+  migrations/       41 migrasi
   seeders/          Data contoh dan hak akses
   factories/        UserFactory
 tests/

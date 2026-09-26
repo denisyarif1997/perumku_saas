@@ -8,6 +8,8 @@ use App\Models\PostComment;
 use App\Models\User;
 use App\Notifications\NewCommentOnPost;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -17,10 +19,166 @@ class Show extends Component
 
     public string $body = '';
 
+    /** Kunci pilihan polling yang sedang dicentang / dipilih. */
+    public array $selectedOptions = [];
+
+    /** Tampilkan form pilih ulang setelah warga sudah memilih. */
+    public bool $editingVote = false;
+
     public function mount(Post $post): void
     {
         $this->authorize('view', $post);
         $this->post = $post;
+        $this->selectedOptions = $post->pollSelectionsFor(auth()->user()?->resident_id);
+    }
+
+    /**
+     * Warga memilih (atau mengganti) suaranya pada polling.
+     */
+    public function vote(): void
+    {
+        $this->authorize('vote', $this->post);
+
+        $user = auth()->user();
+        abort_if(! $user->resident_id, 403, 'Akun tidak terhubung dengan data warga.');
+
+        if (! $this->post->isPollOpen()) {
+            $this->resetValidation('selectedOptions');
+
+            throw ValidationException::withMessages([
+                'selectedOptions' => 'Polling ini sudah ditutup.',
+            ]);
+        }
+
+        $options = $this->post->pollOptions();
+        $isSingle = $this->post->poll_type !== 'multiple';
+
+        $this->validate([
+            'selectedOptions' => [
+                'required',
+                'array',
+                $isSingle ? 'size:1' : 'min:1',
+                'max:'.count($options),
+            ],
+            'selectedOptions.*' => ['string', Rule::in(array_keys($options))],
+        ], [
+            'selectedOptions.required' => 'Pilih salah satu jawaban dulu.',
+            'selectedOptions.size' => 'Polling ini hanya boleh satu jawaban.',
+            'selectedOptions.max' => 'Pilihan yang dipilih tidak tersedia.',
+            'selectedOptions.*.in' => 'Pilihan yang dipilih tidak tersedia.',
+        ]);
+
+        $optionKeys = array_values(array_intersect($this->selectedOptions, array_keys($options)));
+
+        DB::transaction(function () use ($user, $optionKeys) {
+            // Ganti suara: suara lama warga ini dihapus agar tidak terhitung dua kali.
+            $this->post->deletePollVotes((int) $user->resident_id);
+
+            foreach ($optionKeys as $optionKey) {
+                $this->post->votes()->create([
+                    'resident_id' => $user->resident_id,
+                    'user_id' => $user->id,
+                    'option_key' => $optionKey,
+                ]);
+            }
+
+            ActivityLog::record([
+                'user_id' => $user->id,
+                'action' => 'create',
+                'module' => 'forum',
+                'subject_type' => Post::class,
+                'subject_id' => $this->post->id,
+                'description' => 'Memberikan suara pada polling: '.$this->post->title,
+                'new_values' => ['selected_options' => $optionKeys],
+            ]);
+        });
+
+        $this->selectedOptions = $optionKeys;
+        $this->editingVote = false;
+        $this->post->refresh();
+
+        session()->flash('success', 'Suara Anda sudah tercatat.');
+    }
+
+    /**
+     * Pilih atau lepas satu pilihan polling saat warga menekan radio/checkbox.
+     *
+     * Nilai dikirim lewat aksi, bukan wire:model, karena Livewire mengirim
+     * nilai radio sebagai string (lihat getInputValue di livewire.esm.js) dan
+     * checkbox hanya mengirim array bila nilai server sudah berupa array.
+     * Keduanya tidak bisa masuk ke properti $selectedOptions bertipe array.
+     *
+     * Status centang digambar ulang dari $selectedOptions, jadi server yang
+     * tetap menjadi sumber kebenaran.
+     */
+    public function selectOption(string $optionKey): void
+    {
+        // Hanya mengubah tampilan sesaat; penulisan suara tetap di vote().
+        if (! $this->post->isPollOpen() || ! array_key_exists($optionKey, $this->post->pollOptions())) {
+            return;
+        }
+
+        $selected = $this->selectedOptions;
+
+        if ($this->post->poll_type === 'multiple') {
+            $this->selectedOptions = in_array($optionKey, $selected, true)
+                ? array_values(array_diff($selected, [$optionKey]))
+                : array_values(array_unique([...$selected, $optionKey]));
+        } else {
+            $this->selectedOptions = [$optionKey];
+        }
+
+        $this->resetValidation('selectedOptions');
+    }
+
+    /**
+     * Batal mengganti pilihan: kembalikan ke suara yang tersimpan.
+     */
+    public function cancelVoteEdit(): void
+    {
+        $this->selectedOptions = $this->post->pollSelectionsFor(auth()->user()?->resident_id);
+        $this->editingVote = false;
+        $this->resetValidation('selectedOptions');
+    }
+
+    /**
+     * Tampilkan kembali form pilihan supaya warga bisa mengganti suaranya.
+     */
+    public function editVote(): void
+    {
+        $this->authorize('vote', $this->post);
+
+        if (! $this->post->isPollOpen()) {
+            session()->flash('error', 'Polling ini sudah ditutup.');
+        }
+
+        $this->editingVote = true;
+    }
+
+    /**
+     * Menutup atau membuka kembali polling. Hanya pembuat polling dan
+     * pengelola forum yang boleh memanggilnya.
+     */
+    public function closePoll(): void
+    {
+        $this->authorize('closePoll', $this->post);
+
+        $this->post->update(['poll_is_closed' => ! $this->post->poll_is_closed]);
+        $this->post->refresh();
+
+        ActivityLog::record([
+            'user_id' => auth()->id(),
+            'action' => 'update',
+            'module' => 'forum',
+            'subject_type' => Post::class,
+            'subject_id' => $this->post->id,
+            'description' => ($this->post->poll_is_closed ? 'Menutup' : 'Membuka kembali')
+                .' polling: '.$this->post->title,
+        ]);
+
+        session()->flash('success', $this->post->poll_is_closed
+            ? 'Polling sudah ditutup.'
+            : 'Polling dibuka kembali.');
     }
 
     /**
@@ -121,6 +279,7 @@ class Show extends Component
             ]);
 
             $post->comments()->delete();
+            $post->deletePollVotes();
             $post->delete();
         });
 
@@ -132,9 +291,27 @@ class Show extends Component
     #[Layout('layouts.resident', ['title' => 'Detail Postingan'])]
     public function render()
     {
+        $post = $this->post->load(['author', 'resident.houseResidents.house', 'comments.author', 'comments.resident']);
+
+        // Suara dan hasil polling hanya dihitung untuk yang berhak melihatnya,
+        // agar warga yang belum memilih tidak bisa menebak angka suara lewat
+        // markup halaman.
+        $selections = $post->pollSelectionsFor(auth()->user()?->resident_id);
+        $canViewResults = $post->canViewResults(auth()->user(), $selections);
+
+        if ($canViewResults) {
+            $post->load('votes');
+        }
+
         return view('livewire.resident.forum.show', [
-            'post' => $this->post->load(['author', 'resident.houseResidents.house', 'comments.author', 'comments.resident']),
-            'commentCount' => $this->post->comments()->count(),
+            'post' => $post,
+            'commentCount' => $post->comments()->count(),
+            'mySelections' => $selections,
+            'canViewResults' => $canViewResults,
+            'pollResults' => $canViewResults ? $post->pollResults() : [],
+            'pollVotersCount' => $canViewResults ? $post->pollVotersCount() : 0,
+            'canManagePoll' => auth()->user()->can('closePoll', $post),
+            'canVote' => $post->isPollOpen() && auth()->user()->can('vote', $post),
         ]);
     }
 }

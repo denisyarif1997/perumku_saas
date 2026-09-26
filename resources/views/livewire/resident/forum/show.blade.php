@@ -36,6 +36,117 @@
             @endif
         </div>
     </div>
+    {{-- Polling --}}
+    @if ($post->is_poll)
+        <div class="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-4" wire:target="vote,editVote,closePoll">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <x-ui.badge color="purple"><i data-lucide="bar-chart-3" class="h-3 w-3"></i> Polling</x-ui.badge>
+                    <x-ui.badge color="slate">{{ $post->pollTypeLabel() }}</x-ui.badge>
+                    @unless ($post->isPollOpen())
+                        <x-ui.badge color="red"><i data-lucide="lock" class="h-3 w-3"></i> Ditutup</x-ui.badge>
+                    @endunless
+                </div>
+                @if ($canManagePoll)
+                    <button type="button" wire:click="closePoll"
+                        class="flex min-h-[34px] items-center gap-1 rounded-xl border border-[#E2E8F0] px-3 text-[13px] font-semibold text-[#334155]">
+                        <i data-lucide="{{ $post->isPollOpen() ? 'lock' : 'unlock' }}" class="h-3.5 w-3.5"></i>
+                        {{ $post->isPollOpen() ? 'Tutup Polling' : 'Buka Lagi' }}
+                    </button>
+                @endif
+            </div>
+
+            @if ($post->poll_closes_at)
+                <p class="flex items-center gap-1.5 text-[12px] text-[#64748B]">
+                    <i data-lucide="clock" class="h-3.5 w-3.5"></i>
+                    {{ $post->isPollOpen() ? 'Ditutup pada' : 'Berakhir pada' }} {{ $post->poll_closes_at->format('d/m/Y H:i') }}
+                </p>
+            @endif
+
+            {{-- Form memilih, tampil saat polling terbuka dan warga belum memilih --}}
+            @if ($canVote && (empty($mySelections) || $editingVote))
+                <form wire:submit="vote" class="space-y-2.5">
+                    <div class="space-y-2">
+                        @foreach ($post->pollOptions() as $optionKey => $optionLabel)
+                            @php($isPicked = in_array($optionKey, $selectedOptions, true))
+                            <label class="flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 transition {{ $isPicked ? 'border-teal-600 bg-teal-50' : 'border-[#E2E8F0] active:bg-slate-50' }}">
+                                <input type="{{ $post->poll_type === 'multiple' ? 'checkbox' : 'radio' }}"
+                                    name="pollOption{{ $post->poll_type === 'multiple' ? '[]' : '' }}"
+                                    value="{{ $optionKey }}" @checked($isPicked)
+                                    wire:click="selectOption('{{ $optionKey }}')"
+                                    wire:loading.attr="disabled" wire:target="selectOption"
+                                    class="h-4 w-4 accent-teal-700">
+                                <span class="min-w-0 flex-1 text-[14px]">{{ $optionLabel }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('selectedOptions') <p class="text-[13px] text-red-600">{{ $message }}</p> @enderror
+
+                    <div class="grid grid-cols-2 gap-2">
+                        @if (! empty($mySelections))
+                            <button type="button" wire:click="cancelVoteEdit"
+                                class="flex min-h-[44px] items-center justify-center rounded-xl border border-[#E2E8F0] bg-white font-semibold">
+                                Batal
+                            </button>
+                        @else
+                            <span></span>
+                        @endif
+                        <button type="submit" wire:loading.attr="disabled"
+                            class="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-teal-700 font-semibold text-white disabled:opacity-60">
+                            <i data-lucide="check" class="h-4 w-4"></i>
+                            <span wire:loading.remove wire:target="vote">Kirim Pilihan</span>
+                            <span wire:loading wire:target="vote">Menyimpan...</span>
+                        </button>
+                    </div>
+                </form>
+            @endif
+
+            {{-- Hasil polling: hanya untuk yang sudah memilih, pembuat polling, dan pengelola --}}
+            @if ($canViewResults)
+                <div class="space-y-2.5 border-t border-[#E2E8F0] pt-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="flex items-center gap-1.5 text-[13px] font-semibold">
+                            <i data-lucide="users" class="h-4 w-4"></i>
+                            {{ $pollVotersCount }} warga sudah memilih
+                        </p>
+                        @if ($canVote && ! $editingVote)
+                            <button type="button" wire:click="editVote"
+                                class="flex min-h-[34px] shrink-0 items-center rounded-xl border border-[#E2E8F0] px-3 text-[13px] font-semibold text-[#334155]">
+                                Ganti Pilihan
+                            </button>
+                        @endif
+                    </div>
+
+                    @foreach ($pollResults as $result)
+                        <div>
+                            <div class="flex items-center justify-between gap-2 text-[13px]">
+                                <span class="min-w-0 flex-1 font-medium">
+                                    {{ $result['label'] }}
+                                    @if (in_array($result['key'], $mySelections, true))
+                                        <i data-lucide="check" class="inline h-3.5 w-3.5 text-teal-700"></i>
+                                    @endif
+                                </span>
+                                <span class="shrink-0 text-[#64748B]">{{ $result['percent'] }}% · {{ $result['votes'] }} suara</span>
+                            </div>
+                            <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
+                                <div class="h-full rounded-full bg-teal-700" style="width: {{ $result['percent'] }}%"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="flex items-start gap-1.5 border-t border-[#E2E8F0] pt-3 text-[13px] text-[#64748B]">
+                    <i data-lucide="eye-off" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+                    @if ($post->isPollOpen())
+                        Hasil polling tampil setelah Anda memilih.
+                    @else
+                        Polling sudah ditutup. Hasil hanya dilihat warga yang sudah memilih.
+                    @endif
+                </p>
+            @endif
+        </div>
+    @endif
+
 
     {{-- Komentar --}}
     <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4">

@@ -135,16 +135,37 @@
 
                 <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
                     <x-ui.badge color="{{ $post->categoryColor() }}">{{ $post->categoryLabel() }}</x-ui.badge>
+                    @if ($post->is_poll)
+                        <x-ui.badge color="purple"><i data-lucide="bar-chart-3" class="h-3 w-3"></i> Polling</x-ui.badge>
+                        <x-ui.badge color="{{ $post->isPollOpen() ? 'green' : 'red' }}">
+                            {{ $post->isPollOpen() ? 'Berlangsung' : 'Ditutup' }}
+                        </x-ui.badge>
+                    @endif
                     <span class="inline-flex items-center gap-1 text-[12px] text-[#64748B]">
                         <i data-lucide="message-circle" class="h-3.5 w-3.5"></i>
                         {{ $post->comments_count ?? 0 }} komentar
                     </span>
                 </div>
 
+                @if ($post->is_poll)
+                    <ul class="mt-2 space-y-1 rounded-xl bg-slate-50 p-2.5 text-[13px] text-[#334155]">
+                        @foreach (array_slice($post->pollOptions(), 0, 3, true) as $optionLabel)
+                            <li class="flex items-start gap-1.5">
+                                <i data-lucide="circle" class="mt-1 h-2 w-2 shrink-0 text-slate-400"></i>
+                                <span class="min-w-0 flex-1">{{ $optionLabel }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-1.5 text-[12px] text-[#64748B]">
+                        {{ $post->poll_voters_count ?? 0 }} warga sudah memilih
+                    </p>
+                @endif
+
                 <div class="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
                     <a href="{{ route('resident.forum.show', $post) }}" wire:navigate
                         class="flex min-h-[42px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 text-[14px] font-semibold text-[#0F172A]">
-                        <i data-lucide="message-circle" class="h-4 w-4"></i> Diskusi
+                        <i data-lucide="{{ $post->is_poll ? 'bar-chart-3' : 'message-circle' }}" class="h-4 w-4"></i>
+                        {{ $post->is_poll ? 'Ikut Polling' : 'Diskusi' }}
                     </a>
                     @can('delete', $post)
                         <button type="button" wire:click="delete({{ $post->id }})" wire:confirm="Hapus postingan ini beserta komentarnya?"
@@ -181,8 +202,8 @@
                             {{ strtoupper(substr(auth()->user()->name ?? 'W', 0, 1)) }}
                         </span>
                         <div class="min-w-0">
-                            <p class="text-[16px] font-bold leading-tight">Postingan Baru</p>
-                            <p class="text-[12px] text-[#64748B]">Bagikan ke semua warga</p>
+                            <p class="text-[16px] font-bold leading-tight">{{ $isPoll ? 'Polling Baru' : 'Postingan Baru' }}</p>
+                            <p class="text-[12px] text-[#64748B]">{{ $isPoll ? 'Ajukan suara dari warga' : 'Bagikan ke semua warga' }}</p>
                         </div>
                     </div>
                     <button type="button" wire:click="closeForm" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F0]">
@@ -213,6 +234,74 @@
                             class="w-full rounded-xl border border-[#E2E8F0] px-3 py-2.5 text-[15px] outline-none focus:border-teal-600"></textarea>
                         <p class="mt-1 text-right text-[12px] text-[#64748B]">{{ mb_strlen($body) }}/3000</p>
                     </x-ui.field>
+
+                    {{-- Mode polling --}}
+                    <div class="rounded-xl border border-[#E2E8F0] p-3">
+                        @if (! $isPoll)
+                            <button type="button" wire:click="$set('isPoll', true)"
+                                class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-purple-50 font-semibold text-purple-700">
+                                <i data-lucide="bar-chart-3" class="h-4 w-4"></i> Jadikan Polling
+                            </button>
+                        @else
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="flex items-center gap-1.5 text-[14px] font-bold text-purple-700">
+                                    <i data-lucide="bar-chart-3" class="h-4 w-4"></i> Mode Polling
+                                </p>
+                                <button type="button" wire:click="disablePoll" title="Kembali ke Posting Biasa"
+                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F0]">
+                                    <i data-lucide="x" class="h-4 w-4"></i>
+                                </button>
+                            </div>
+
+                            <p class="mt-1 text-[12px] text-[#64748B]">Minimal dua pilihan, hasil baru tampil setelah warga memilih.</p>
+
+                            <div class="mt-3 space-y-2">
+                                @foreach ($pollChoices as $index => $choice)
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" wire:model.live.debounce.300ms="pollChoices.{{ $index }}" maxlength="100"
+                                            placeholder="Pilihan {{ $index + 1 }}"
+                                            class="min-h-[44px] w-full rounded-xl border border-[#E2E8F0] px-3 text-[14px] outline-none focus:border-purple-500">
+                                        <button type="button" wire:click="removePollChoice({{ $index }})"
+                                            title="Hapus pilihan"
+                                            @disabled(count($pollChoices) <= 2)
+                                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-700 disabled:opacity-30">
+                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @error('pollChoices') <p class="mt-1 text-[13px] text-red-600">{{ $message }}</p> @enderror
+                            @error('pollChoices.*') <p class="mt-1 text-[13px] text-red-600">{{ $message }}</p> @enderror
+
+                            <button type="button" wire:click="addPollChoice" @disabled(count($pollChoices) >= $maxPollChoices)
+                                class="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#E2E8F0] font-semibold text-[#64748B] disabled:opacity-40">
+                                <i data-lucide="plus" class="h-4 w-4"></i> Tambah Pilihan
+                            </button>
+
+                            <div class="mt-3 grid grid-cols-2 gap-2">
+                                <label class="block">
+                                    <span class="text-[13px] font-semibold">Jenis</span>
+                                    <select wire:model.live="pollType"
+                                        class="mt-1 min-h-[44px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[14px]">
+                                        <option value="single">Pilih satu</option>
+                                        <option value="multiple">Pilih beberapa</option>
+                                    </select>
+                                </label>
+                                <label class="block">
+                                    <span class="text-[13px] font-semibold">Ditutup</span>
+                                    <select wire:model.live="pollDuration"
+                                        class="mt-1 min-h-[44px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[14px]">
+                                        <option value="1">1 hari</option>
+                                        <option value="3">3 hari</option>
+                                        <option value="7">7 hari</option>
+                                        <option value="14">14 hari</option>
+                                        <option value="30">30 hari</option>
+                                        <option value="0">Tanpa batas</option>
+                                    </select>
+                                </label>
+                            </div>
+                        @endif
+                    </div>
 
                     <div class="grid grid-cols-2 gap-2 pb-safe">
                         <button type="button" wire:click="closeForm"

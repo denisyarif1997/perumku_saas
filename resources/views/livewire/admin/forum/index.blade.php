@@ -62,11 +62,24 @@
 
                 <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-[#E2E8F0] pt-3">
                     <x-ui.badge color="slate">{{ $post->comments_count }} komentar</x-ui.badge>
+                    @if ($post->is_poll)
+                        <x-ui.badge color="purple"><i data-lucide="bar-chart-3" class="h-3 w-3"></i> {{ $post->poll_voters_count }} suara</x-ui.badge>
+                        <x-ui.badge color="{{ $post->isPollOpen() ? 'green' : 'red' }}">
+                            {{ $post->isPollOpen() ? 'Berlangsung' : 'Ditutup' }}
+                        </x-ui.badge>
+                    @endif
                     @if ($post->is_pinned)
                         <x-ui.badge color="sky"><i data-lucide="pin" class="h-3 w-3"></i> Disematkan</x-ui.badge>
                     @endif
 
                     <div class="ml-auto flex items-center gap-2">
+                        @if ($post->is_poll)
+                            <button type="button" wire:click="togglePoll({{ $post->id }})"
+                                class="flex h-9 items-center gap-1 rounded-xl border border-[#E2E8F0] px-3 text-[12px] font-semibold">
+                                <i data-lucide="{{ $post->isPollOpen() ? 'lock' : 'unlock' }}" class="h-3.5 w-3.5"></i>
+                                {{ $post->isPollOpen() ? 'Tutup' : 'Buka' }}
+                            </button>
+                        @endif
                         <button type="button" wire:click="togglePin({{ $post->id }})"
                             class="flex h-9 items-center gap-1 rounded-xl border border-[#E2E8F0] px-3 text-[12px] font-semibold">
                             <i data-lucide="pin" class="h-3.5 w-3.5"></i> {{ $post->is_pinned ? 'Lepas' : 'Sematkan' }}
@@ -108,6 +121,11 @@
                                     <x-ui.badge color="sky"><i data-lucide="pin" class="h-3 w-3"></i> Disematkan</x-ui.badge>
                                 </span>
                             @endif
+                            @if ($post->is_poll)
+                                <span class="mt-1 inline-block">
+                                    <x-ui.badge color="purple"><i data-lucide="bar-chart-3" class="h-3 w-3"></i> {{ $post->poll_voters_count }} suara</x-ui.badge>
+                                </span>
+                            @endif
                         </td>
                         <td class="px-4 py-3">
                             {{ $post->authorName() }}
@@ -117,6 +135,12 @@
                         <td class="px-4 py-3 text-center">{{ $post->comments_count }}</td>
                         <td class="px-4 py-3 text-[13px] text-[#64748B]">{{ $post->created_at->format('d/m/Y') }}</td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
+                            @if ($post->is_poll)
+                                <button type="button" wire:click="togglePoll({{ $post->id }})"
+                                    class="mr-2 font-semibold {{ $post->isPollOpen() ? 'text-amber-700' : 'text-purple-700' }}">
+                                    {{ $post->isPollOpen() ? 'Tutup Polling' : 'Buka Polling' }}
+                                </button>
+                            @endif
                             <button type="button" wire:click="togglePin({{ $post->id }})"
                                 class="mr-2 font-semibold {{ $post->is_pinned ? 'text-amber-700' : 'text-sky-700' }}">
                                 {{ $post->is_pinned ? 'Lepas Semat' : 'Sematkan' }}

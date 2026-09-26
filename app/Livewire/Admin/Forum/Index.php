@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Forum;
 use App\Models\ActivityLog;
 use App\Models\Post;
 use App\Models\PostComment;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -52,6 +53,30 @@ class Index extends Component
             : 'Sematan postingan dilepas.');
     }
 
+    /**
+     * Moderator menutup atau membuka kembali polling warga.
+     */
+    public function togglePoll(int $id): void
+    {
+        $post = Post::findOrFail($id);
+        $this->authorize('closePoll', $post);
+
+        $post->update(['poll_is_closed' => ! $post->poll_is_closed]);
+
+        ActivityLog::record([
+            'user_id' => auth()->id(),
+            'action' => 'update',
+            'module' => 'forum',
+            'subject_type' => Post::class,
+            'subject_id' => $post->id,
+            'description' => ($post->poll_is_closed ? 'Menutup' : 'Membuka kembali').' polling: '.$post->title,
+        ]);
+
+        session()->flash('success', $post->poll_is_closed
+            ? 'Polling ditutup, warga tidak bisa memilih lagi.'
+            : 'Polling dibuka kembali.');
+    }
+
     public function deletePost(int $id): void
     {
         $post = Post::withCount('comments')->findOrFail($id);
@@ -69,6 +94,7 @@ class Index extends Component
             ]);
 
             $post->comments()->delete();
+            $post->deletePollVotes();
             $post->delete();
         });
 
@@ -104,6 +130,7 @@ class Index extends Component
             'posts' => Post::query()
                 ->with(['author', 'resident.houseResidents.house'])
                 ->withCount('comments')
+                ->withCount(['votes as poll_voters_count' => fn (Builder $q) => $q->selectRaw('count(distinct resident_id)')])
                 ->when($this->search, fn ($q) => $q->where(function ($qq) {
                     $qq->where('title', 'like', "%{$this->search}%")
                         ->orWhere('body', 'like', "%{$this->search}%");

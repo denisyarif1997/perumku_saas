@@ -41,13 +41,23 @@
 
     <div class="hidden overflow-hidden rounded-2xl border bg-white md:block">
         <table class="w-full text-left text-[14px]">
-            <thead class="bg-slate-50 text-[#64748B]"><tr><th class="px-4 py-3">Nama</th><th class="px-4 py-3">NIK</th><th class="px-4 py-3">Rumah</th><th class="px-4 py-3 text-right">Aksi</th></tr></thead>
+            <thead class="bg-slate-50 text-[#64748B]"><tr><th class="px-4 py-3">Nama</th><th class="px-4 py-3">NIK</th><th class="px-4 py-3">Rumah</th>
+            <th class="px-4 py-3">Email</th>
+            <th class="px-4 py-3">No Hp</th>
+            <th class="px-4 py-3">Gender</th>
+
+            <th class="px-4 py-3 text-right">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($residents as $resident)
                     <tr class="border-t">
                         <td class="px-4 py-3 font-semibold">{{ $resident->name }}</td>
                         <td class="px-4 py-3">{{ $resident->nik ?? '-' }}</td>
                         <td class="px-4 py-3">{{ $resident->houseResidents->first()?->house?->fullLabel() ?? '-' }}</td>
+                        <td class="px-4 py-3">{{ $resident->email ?? '-' }}</td>
+                        <td class="px-4 py-3">{{ $resident->phone ?? '-' }}</td>
+                        <td class="px-4 py-3">
+                            {{ $resident->gender === 'male' ? 'Laki-laki' : ($resident->gender === 'female' ? 'Perempuan' : '-') }}
+                        </td>
                         <td class="px-4 py-3 text-right"><a href="{{ route('admin.residents.edit', $resident) }}" wire:navigate class="font-semibold">Ubah</a></td>
                     </tr>
                 @empty

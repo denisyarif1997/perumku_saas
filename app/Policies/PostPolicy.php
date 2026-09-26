@@ -40,6 +40,24 @@ class PostPolicy
     }
 
     /**
+     * Hanya warga yang punya data warga boleh memilih polling. Postingan
+     * non-polling tidak punya suara sama sekali.
+     */
+    public function vote(User $user, Post $post): bool
+    {
+        return $user->resident_id !== null && $post->is_poll;
+    }
+
+    /**
+     * Menutup / membuka kembali polling: sama dengan hak moderasi, yaitu
+     * pemilik polling atau pengelola forum.
+     */
+    public function closePoll(User $user, Post $post): bool
+    {
+        return $post->is_poll && ($this->owns($user, $post) || $user->hasPermission('manage-forum'));
+    }
+
+    /**
      * Pemilik postingan ditentukan dari relasi resident milik user.
      */
     protected function owns(User $user, Post $post): bool
