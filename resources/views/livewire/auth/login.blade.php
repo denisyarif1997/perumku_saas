@@ -44,7 +44,7 @@
         </p>
     </div>
 
-    <!-- Kartu Akun Demo -->
+    {{-- <!-- Kartu Akun Demo -->
     <div class="mt-6 rounded-[24px] border border-[#EEF2F1] bg-white p-4 text-[13px] text-[#64748B] shadow-[0_8px_30px_-6px_rgba(19,78,74,0.12)]">
     <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-2">
         <div class="flex items-center gap-2">
@@ -108,7 +108,7 @@
                 Semua akun
             </span>
         </div>
-    </div>
+    </div> --}}
 
 <a
     href="https://wa.me/6289525645332?text=Halo%20Perumku,%20saya%20ingin%20mencoba%20akun%20demo"

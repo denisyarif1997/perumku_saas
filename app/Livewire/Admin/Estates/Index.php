@@ -62,6 +62,7 @@ class Index extends Component
 
     public function edit(HousingEstate $estate): void
     {
+        
         $this->editingId = $estate->id;
         $this->editCode = $estate->code;
         $this->editName = $estate->name;

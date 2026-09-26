@@ -34,6 +34,8 @@ class Dashboard extends Component
                 ->get();
         }
 
+        
+
         $outstanding = $billings->whereIn('status', ['unpaid', 'partial']);
 
         $overdue = $outstanding
