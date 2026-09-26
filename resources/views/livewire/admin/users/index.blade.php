@@ -11,9 +11,11 @@
         </button>
     </div>
 
+    {{-- Filter Role --}}
     <select wire:model.live="roleFilter" class="min-h-[48px] w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-[15px] md:max-w-xs">
         <option value="">Semua Role</option>
         @foreach ($roles as $role)
+            @continue(! $canAssignSuperAdmin && $role->slug === 'super_admin')
             <option value="{{ $role->id }}">{{ $role->name }}</option>
         @endforeach
     </select>
@@ -44,21 +46,26 @@
                     </div>
                     <x-ui.badge color="{{ $user->status === 'active' ? 'green' : 'red' }}">{{ $user->status === 'active' ? '● Aktif' : '○ Nonaktif' }}</x-ui.badge>
                 </div>
+
                 <div class="mt-3">
                     <x-ui.field label="Role">
-                        <select wire:change="changeRole({{ $user->id }}, $event.target.value)" class="min-h-[48px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[15px]">
-                            @php $roleLocked = $user->role && ! $roles->contains('id', $user->role_id); @endphp
-                            @if ($roleLocked)
-                                {{-- Role saat ini tidak boleh diubah oleh pengguna tanpa hak manage-role --}}
-                                <option value="{{ $user->role_id }}" selected disabled>{{ $user->role->name }} (terkunci)</option>
-                            @endif
-                            @foreach ($roles as $role)
-                                @continue (! $canAssignSuperAdmin && $role->slug === 'super_admin')
-                                <option value="{{ $role->id }}" @selected((int) $user->role_id === (int) $role->id)>{{ $role->name }}</option>
-                            @endforeach
-                        </select>
+                        {{-- Jika target user adalah Super Admin dan user yang login BUKAN Super Admin, disable dropdown secara penuh --}}
+                        @if ($user->role?->slug === 'super_admin' && ! $canAssignSuperAdmin)
+                            <select class="min-h-[48px] w-full rounded-xl border border-[#E2E8F0] bg-slate-100 px-3 text-[15px] cursor-not-allowed" disabled>
+                                <option selected>{{ $user->role->name }} (terkunci)</option>
+                            </select>
+                        @else
+                            <select wire:change="changeRole({{ $user->id }}, $event.target.value)" class="min-h-[48px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[15px]">
+                                @foreach ($roles as $role)
+                                    {{-- PERBAIKAN: Sembunyikan opsi Super Admin dari dropdown jika user login tidak berhak --}}
+                                    @continue(! $canAssignSuperAdmin && $role->slug === 'super_admin')
+                                    <option value="{{ $role->id }}" @selected((int) $user->role_id === (int) $role->id)>{{ $role->name }}</option>
+                                @endforeach
+                            </select>
+                        @endif
                     </x-ui.field>
                 </div>
+
                 <div class="mt-3 grid grid-cols-3 gap-2">
                     <button wire:click="openEdit({{ $user->id }})" class="flex min-h-[44px] items-center justify-center gap-1 rounded-xl border text-[14px] font-semibold"><i data-lucide="pencil" class="h-4 w-4"></i> Ubah</button>
                     <button wire:click="toggleStatus({{ $user->id }})" class="flex min-h-[44px] items-center justify-center rounded-xl border text-[14px] font-semibold">Ubah Status</button>
@@ -96,7 +103,7 @@
                         <select wire:model="role_id" class="min-h-[48px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[15px]">
                             <option value="">Pilih role</option>
                             @foreach ($roles as $role)
-                                @continue (! $canAssignSuperAdmin && $role->slug === 'super_admin')
+                                @continue(! $canAssignSuperAdmin && $role->slug === 'super_admin')
                                 <option value="{{ $role->id }}">{{ $role->name }}</option>
                             @endforeach
                         </select>

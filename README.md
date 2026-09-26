@@ -1,6 +1,6 @@
 # Perumku
 
-Aplikasi manajemen perumahan (housing estate) yang dirancang untuk dijalankan sebagai
+Aplikasi manajemen perumahan (Perumku) yang dirancang untuk dijalankan sebagai
 **SaaS multi-tenant**: satu instalasi melayani banyak perumahan, dan data satu
 perumahan tidak pernah bisa dilihat — maupun ditulis — oleh pengelola atau warga
 perumahan lain.

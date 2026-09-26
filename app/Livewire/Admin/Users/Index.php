@@ -15,30 +15,16 @@ class Index extends Component
     use WithPagination;
 
     public string $search = '';
-
     public string $roleFilter = '';
-
     public bool $showForm = false;
-
     public ?int $editingId = null;
-
     public string $name = '';
-
     public string $email = '';
-
     public string $phone = '';
-
     public string $role_id = '';
 
-    public function updatedSearch(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedRoleFilter(): void
-    {
-        $this->resetPage();
-    }
+    public function updatedSearch(): void { $this->resetPage(); }
+    public function updatedRoleFilter(): void { $this->resetPage(); }
 
     public function mount(): void
     {
@@ -52,20 +38,13 @@ class Index extends Component
     }
 
     /**
-     * Hanya pemegang permission "manage-role" yang boleh memberikan role Super Admin.
+     * Cek apakah user yang login punya wewenang untuk assign role Super Admin.
      */
-    protected function canAssignRole(Role $role): bool
+    protected function isSuperAdminUser(): bool
     {
-        if ($role->slug !== 'super_admin') {
-            return true;
-        }
-
-        return auth()->user()->hasPermission('manage-role');
+        return auth()->user()->role?->slug === 'super_admin';
     }
 
-    /**
-     * Cek apakah user adalah Super Admin aktif terakhir di sistem.
-     */
     protected function isLastActiveSuperAdmin(User $user): bool
     {
         if ($user->role?->slug !== 'super_admin') {
@@ -89,6 +68,12 @@ class Index extends Component
     {
         $user = User::findOrFail($id);
         $this->authorize('update', $user);
+
+        // Kunci jika target user adalah Super Admin dan user yang login BUKAN Super Admin
+        if ($user->role?->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
+            session()->flash('error', 'Hanya Super Admin yang dapat mengubah data Super Admin.');
+            return;
+        }
 
         $this->editingId = $user->id;
         $this->name = $user->name;
@@ -126,27 +111,25 @@ class Index extends Component
             'role_id.exists' => 'Role tidak valid.',
         ]);
 
+        $targetRole = Role::findOrFail($data['role_id']);
+
+        // PROTEKSI 1: Tolak jika mencoba menetapkan role Super Admin tapi user yang login bukan Super Admin
+        if ($targetRole->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
+            session()->flash('error', 'Hanya Super Admin yang dapat memberikan role Super Admin.');
+            return;
+        }
+
         if (! $isUpdate) {
             $data['password'] = Hash::make('password123');
             $data['status'] = 'active';
         }
 
-        $role = Role::findOrFail($data['role_id']);
-
-        if (! $this->canAssignRole($role)) {
-            session()->flash('error', 'Hanya pengelola Role & Akses yang dapat memberikan role Super Admin.');
-
-            return;
-        }
-
-        if ($isUpdate && $user->role?->slug !== $role->slug && $this->isLastActiveSuperAdmin($user)) {
+        if ($isUpdate && $user->role?->slug !== $targetRole->slug && $this->isLastActiveSuperAdmin($user)) {
             session()->flash('error', 'Super Admin aktif terakhir tidak boleh diubah rolenya.');
-
             return;
         }
 
         $data['phone'] = $data['phone'] ?: null;
-
         $user->fill($data)->save();
 
         ActivityLog::record([
@@ -172,27 +155,25 @@ class Index extends Component
 
         $role = Role::findOrFail($roleId);
 
-        if ($user->id === auth()->id() && $user->role_id !== $role->id) {
+        if ($user->id === auth()->id()) {
             session()->flash('error', 'Tidak bisa mengubah role akun sendiri.');
-
             return;
         }
 
-        if (! $this->canAssignRole($role)) {
-            session()->flash('error', 'Hanya pengelola Role & Akses yang dapat memberikan role Super Admin.');
-
+        // PROTEKSI 2: Kunci agar Admin tidak bisa mengubah siapa pun jadi Super Admin
+        if ($role->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
+            session()->flash('error', 'Hanya Super Admin yang dapat memberikan role Super Admin.');
             return;
         }
 
-        if ($user->role?->slug === 'super_admin' && ! auth()->user()->hasPermission('manage-role')) {
-            session()->flash('error', 'Role Super Admin hanya bisa diubah oleh pengelola Role & Akses.');
-
+        // PROTEKSI 3: Kunci agar Admin tidak bisa mengubah role akun yang ber-role Super Admin
+        if ($user->role?->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
+            session()->flash('error', 'Hanya Super Admin yang dapat mengubah role akun Super Admin.');
             return;
         }
 
         if ($user->role_id !== $role->id && $this->isLastActiveSuperAdmin($user)) {
             session()->flash('error', 'Super Admin aktif terakhir tidak boleh diubah rolenya.');
-
             return;
         }
 
@@ -200,8 +181,11 @@ class Index extends Component
         $user->update(['role_id' => $role->id]);
 
         ActivityLog::record([
-            'user_id' => auth()->id(), 'action' => 'update', 'module' => 'users',
-            'subject_type' => User::class, 'subject_id' => $user->id,
+            'user_id' => auth()->id(),
+            'action' => $update ?? 'update',
+            'module' => 'users',
+            'subject_type' => User::class,
+            'subject_id' => $user->id,
             'description' => 'Mengubah role user '.$user->email.' dari '.$oldRole.' menjadi '.$role->name,
         ]);
 
@@ -212,42 +196,44 @@ class Index extends Component
     {
         $this->authorize('update', User::class);
         $user = User::findOrFail($id);
+
         if ($user->id === auth()->id()) {
             session()->flash('error', 'Tidak bisa menonaktifkan akun sendiri.');
+            return;
+        }
 
+        if ($user->role?->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
+            session()->flash('error', 'Hanya Super Admin yang dapat mengubah status akun Super Admin.');
             return;
         }
 
         if ($user->status === 'active' && $this->isLastActiveSuperAdmin($user)) {
             session()->flash('error', 'Super Admin aktif terakhir tidak boleh dinonaktifkan.');
-
             return;
         }
 
         $user->update(['status' => $user->status === 'active' ? 'inactive' : 'active']);
-        ActivityLog::record([
-            'user_id' => auth()->id(), 'action' => 'update', 'module' => 'users',
-            'subject_type' => User::class, 'subject_id' => $user->id,
-            'description' => 'Mengubah status user '.$user->email.' menjadi '.$user->status,
-        ]);
     }
 
     public function resetPassword(int $id): void
     {
         $this->authorize('update', User::class);
         $user = User::findOrFail($id);
+
+        if ($user->role?->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
+            session()->flash('error', 'Hanya Super Admin yang dapat mereset password akun Super Admin.');
+            return;
+        }
+
         $user->update(['password' => Hash::make('password123')]);
-        ActivityLog::record([
-            'user_id' => auth()->id(), 'action' => 'update', 'module' => 'users',
-            'subject_type' => User::class, 'subject_id' => $user->id,
-            'description' => 'Mereset password user '.$user->email,
-        ]);
         session()->flash('success', 'Password '.$user->email.' direset ke password123.');
     }
 
     #[Layout('layouts.admin', ['title' => 'User'])]
     public function render()
     {
+        $isSuperAdmin = $this->isSuperAdminUser();
+
         return view('livewire.admin.users.index', [
             'users' => User::with(['role', 'resident'])
                 ->when($this->search, fn ($q) => $q->where(function ($qq) {
@@ -255,14 +241,13 @@ class Index extends Component
                 }))
                 ->when($this->roleFilter, fn ($q) => $q->where('role_id', $this->roleFilter))
                 ->latest()->paginate(10),
+
             'roles' => Role::query()
-                // Role Super Admin hanya boleh diberikan oleh pengelola Role & Akses.
-                ->when(
-                    ! auth()->user()->hasPermission('manage-role'),
-                    fn ($query) => $query->where('slug', '!=', 'super_admin')
-                )
+                // Menyaring role Super Admin agar TIDAK dikirim ke Blade untuk non-Super Admin
+                ->when(! $isSuperAdmin, fn ($q) => $q->where('slug', '!=', 'super_admin'))
                 ->orderBy('name')->get(),
-            'canAssignSuperAdmin' => auth()->user()->hasPermission('manage-role'),
+
+            'canAssignSuperAdmin' => $isSuperAdmin,
         ]);
     }
 }
