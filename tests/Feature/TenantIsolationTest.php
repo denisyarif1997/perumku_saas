@@ -66,6 +66,21 @@ class TenantIsolationTest extends TestCase
         return $this->makeStaff('admin.b@housinghub.test', 'admin', $this->estateBId());
     }
 
+    /**
+     * Super admin platform. Sengaja dibuat tanpa housing_estate_id supaya
+     * CurrentEstate::id() bernilai null (mode tanpa filter).
+     */
+    protected function platformSuperAdmin(): User
+    {
+        return User::create([
+            'name' => 'Platform Operator',
+            'email' => 'platform@housinghub.test',
+            'password' => 'password',
+            'role_id' => $this->roleId('super_admin'),
+            'status' => 'active',
+        ]);
+    }
+
     /** Staf estate B yang ikut memegang permission tertentu. */
     protected function staffB(string $permission): User
     {
@@ -639,6 +654,86 @@ class TenantIsolationTest extends TestCase
                 "Halaman {$page} seharusnya tetap menyediakan dropdown perumahan untuk platform.",
             );
         }
+    }
+
+    public function test_guest_can_open_the_public_info_page(): void
+    {
+        $this->get(route('info'))
+            ->assertOk()
+            ->assertSee('Kelola seluruh perumahan', false)
+            ->assertSee('Daftar Sekarang', false)
+            // Halaman promosi, bukan dokumen teknis.
+            ->assertDontSee('php artisan', false);
+    }
+
+    public function test_login_page_links_to_the_info_route(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee(route('info'), false)
+            ->assertDontSee('info.html', false);
+    }
+
+    public function test_only_super_admin_can_open_platform_dashboard(): void
+    {
+        $this->makeEstateB();
+        $platform = $this->platformSuperAdmin();
+
+        $this->actingAs($platform)->get(route('platform.dashboard'))->assertOk();
+
+        // Admin condominan biasa tidak boleh melihat angka lintas condominan.
+        $this->actingAs($this->estateAdminA())
+            ->get(route('platform.dashboard'))
+            ->assertForbidden();
+
+        // Warga juga tidak.
+        $this->actingAs($this->residentA())
+            ->get(route('platform.dashboard'))
+            ->assertForbidden();
+    }
+
+    public function test_platform_dashboard_summarises_every_estate(): void
+    {
+        [, $houseB, $residentB] = $this->makeEstateB();
+        $estateA = $this->estateA();
+
+        // Satu tagihan untuk estate A, satu lagi untuk estate B.
+        foreach ([[$estateA->id, 'PLAT-A-0001', 100000], [null, 'PLAT-B-0001', 200000]] as [$estateId, $invoice, $amount]) {
+            $house = $estateId === null ? $houseB : $estateA->houses()->first();
+
+            Billing::create([
+                'invoice_number' => $invoice,
+                'house_id' => $house->id,
+                'resident_id' => $residentB->id,
+                'billing_type' => 'ipl',
+                'period_month' => 1,
+                'period_year' => 2026,
+                'amount' => $amount,
+                'total' => $amount,
+                'due_date' => now()->addMonth()->toDateString(),
+                'status' => 'unpaid',
+            ]);
+        }
+
+        $this->actingAs($this->platformSuperAdmin())
+            ->get(route('platform.dashboard'))
+            ->assertOk()
+            // Nama kedua condominan ikut tampil, jadi agregatnya lintas hook.
+            ->assertSee($estateA->name)
+            ->assertSee($houseB->block->estate->name);
+    }
+
+    public function test_platform_menu_only_appears_for_super_admin(): void
+    {
+        $this->actingAs($this->platformSuperAdmin())
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee(route('platform.dashboard'), false);
+
+        $this->actingAs($this->estateAdminA())
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertDontSee(route('platform.dashboard'), false);
     }
 
     public function test_billing_and_payment_proof_are_not_reachable_across_estates(): void

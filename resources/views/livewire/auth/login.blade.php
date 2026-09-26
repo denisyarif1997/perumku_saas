@@ -4,9 +4,9 @@
         <div class="flex items-start justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-[#134E4A]">Masuk ke {{ config('app.name', 'Perumku') }}</h1>
-                <p class="mt-1 text-[14px] text-[#64748B]">Kelola rumah, IPL, dan layanan warga.</p>
+                <p class="mt-1 text-[14px] text-[#64748B]">Kelola Rumah, IPL / Iuran, dan layanan warga.</p>
             </div>
-            <span class="mt-1 shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Aman</span>
+            {{-- <span class="mt-1 shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Aman</span> --}}
         </div>
 
         <form wire:submit="login" class="mt-6 space-y-4">
@@ -43,9 +43,9 @@
                 Belum punya akun perumahan?
                 <a href="{{ route('register') }}" class="font-semibold text-teal-700 hover:text-teal-600">Daftar di sini</a>
             </p>
-            <!-- Link ke info.html di folder public -->
+            <!-- Halaman promosi aplikasi -->
             <p>
-                <a href="{{ asset('info.html') }}" target="_blank" class="inline-flex items-center gap-1 font-medium text-teal-600 hover:text-teal-800 hover:underline">
+                <a href="{{ route('info') }}" class="inline-flex items-center gap-1 font-medium text-teal-600 hover:text-teal-800 hover:underline">
                     <span>Lihat Informasi Aplikasi</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>

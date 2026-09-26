@@ -27,6 +27,7 @@ use App\Livewire\Admin\Water\Rates\Index as WaterRateIndex;
 use App\Livewire\Admin\Water\Readings as WaterReadings;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
+use App\Livewire\Platform\Dashboard as PlatformDashboard;
 use App\Livewire\Resident\Chess\Index as ResidentChessIndex;
 use App\Livewire\Resident\Chess\Play as ResidentChessPlay;
 use App\Livewire\Resident\Complaints\Index as ResidentComplaintIndex;
@@ -45,6 +46,9 @@ Route::get('/', fn () => redirect()->route('login'));
 Route::middleware('guest')->group(function () {
     Route::get('/login', Login::class)->name('login');
     Route::get('/register', Register::class)->name('register');
+
+    // Halaman promosi aplikasi, publik dan tanpa perlu masuk.
+    Route::view('/info', 'marketing.info')->name('info');
 });
 
 Route::middleware(['auth', 'active'])->group(function () {
@@ -52,6 +56,12 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     // Bukti bayar (BLOB database, maks 2 MB). Otorisasi dicek di controller via PaymentPolicy.
     Route::get('/payments/{payment}/proof', [PaymentProofController::class, 'show'])->name('payments.proof');
+
+    // Level platform: hanya super_admin, dan sengaja berada di luar group
+    // permission:access-admin karena isinya lintas seluruh condominan.
+    Route::prefix('platform')->name('platform.')->middleware('role:super_admin')->group(function () {
+        Route::get('/dashboard', PlatformDashboard::class)->name('dashboard');
+    });
 
     Route::prefix('resident')->name('resident.')->group(function () {
         Route::get('/dashboard', ResidentDashboard::class)->name('dashboard');

@@ -17,6 +17,9 @@ class AdminMenu
     {
         return [
             ['label' => null, 'items' => [
+                // Item platform dibatasi peran, bukan permission: isinya lintas
+                // seluruh condominan sehingga tidak boleh tampil untuk admin biasa.
+                ['platform.dashboard', 'globe', 'Dashboard Super Admin', 'platform.*', ['menu-dashboard'], [], ['super_admin']],
                 ['admin.dashboard', 'layout-dashboard', 'Dashboard', 'admin.dashboard', ['menu-dashboard'], ['view-dashboard']],
             ]],
             ['label' => 'Data Master', 'items' => [
@@ -75,6 +78,12 @@ class AdminMenu
                 $visibleItems = [];
 
                 foreach ($section['items'] as $item) {
+                    // Elemen ke-7 (opsional) membatasi item ini ke peran tertentu.
+                    $roles = $item[6] ?? [];
+                    if ($roles !== [] && ! $user->hasRole(...$roles)) {
+                        continue;
+                    }
+
                     [$route, $icon, $label, $pattern, $menuSlugs, $actionSlugs] = $item;
                     $check = $menuPermsExist ? $menuSlugs : $actionSlugs;
                     if ($user->hasPermission(...$check)) {

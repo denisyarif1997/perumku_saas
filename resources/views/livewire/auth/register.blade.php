@@ -6,7 +6,7 @@
                 <h1 class="text-2xl font-bold text-[#134E4A]">Daftarkan: {{ config('app.name', 'Perumku') }}</h1>
                 <p class="mt-1 text-[14px] text-[#64748B]">Isi formulir untuk mengajukan pendaftaran perumahan Anda.</p>
             </div>
-            <span class="mt-1 shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Gratis</span>
+            {{-- <span class="mt-1 shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Gratis</span> --}}
         </div>
 
         <form wire:submit="sendToWhatsapp" class="mt-6 space-y-4">
