@@ -280,6 +280,77 @@ class RbacTest extends TestCase
             ->assertDontSee('Beralih ke Tampilan Admin');
     }
 
+    public function test_admin_area_offers_resident_button_for_resident_with_staff_role(): void
+    {
+        // Warga yang dinaikkan ke role staf harus bisa masuk ke area warga
+        // langsung dari sidebar admin, tanpa perlu log out.
+        $user = $this->giveResidentUserRole('rt');
+
+        $response = $this->actingAs($user)->get(route('admin.dashboard'));
+
+        $response->assertOk();
+        $response->assertSee('Beralih ke Tampilan Warga');
+        $response->assertSee(route('resident.dashboard'), false);
+
+        // Targetnya benar-benar bisa dimuat, bukan hanya tautan yang terlihat benar.
+        $this->actingAs($user)->get(route('resident.dashboard'))->assertOk();
+    }
+
+    public function test_admin_area_hides_resident_button_for_staff_without_resident_data(): void
+    {
+        // Staf murni tanpa data warga tidak punya halaman warga untuk dibuka.
+        $user = User::factory()->create([
+            'role_id' => Role::where('slug', 'rt')->firstOrFail()->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($user)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertDontSee('Beralih ke Tampilan Warga')
+            ->assertDontSee(route('resident.dashboard'), false);
+    }
+
+    public function test_resident_area_offers_admin_button_in_header_for_staff_role(): void
+    {
+        $user = $this->giveResidentUserRole('rt');
+
+        $this->actingAs($user)->get(route('resident.dashboard'))
+            ->assertOk()
+            ->assertSee('Kembali ke Admin')
+            ->assertSee(route('admin.dashboard'), false);
+    }
+
+    public function test_resident_area_hides_admin_button_for_pure_resident(): void
+    {
+        $user = $this->giveResidentUserRole('resident');
+
+        $this->actingAs($user)->get(route('resident.dashboard'))
+            ->assertOk()
+            ->assertDontSee('Kembali ke Admin')
+            ->assertDontSee(route('admin.dashboard'), false);
+    }
+
+    public function test_resident_area_admin_button_skips_dashboard_without_view_dashboard_permission(): void
+    {
+        // Sama seperti tombol di halaman profil, tombol di header harus
+        // mengarah ke modul yang benar-benar bisa dimuat.
+        $role = Role::create(['name' => 'Petugas Aduan', 'slug' => 'petugas_aduan_header', 'status' => 'active']);
+        $role->permissions()->sync([
+            Permission::where('slug', 'access-admin')->firstOrFail()->id,
+            Permission::where('slug', 'manage-complaint')->firstOrFail()->id,
+        ]);
+
+        $user = $this->giveResidentUserRole($role->slug);
+
+        $this->actingAs($user)->get(route('resident.dashboard'))
+            ->assertOk()
+            ->assertSee('Kembali ke Admin')
+            ->assertSee(route('admin.info.complaints'), false)
+            ->assertDontSee(route('admin.dashboard'), false);
+
+        $this->actingAs($user)->get(route('admin.info.complaints'))->assertOk();
+    }
+
     public function test_resident_profile_button_skips_dashboard_without_view_dashboard_permission(): void
     {
         // Akses admin boleh, tetapi tidak boleh melihat dashboard, sehingga

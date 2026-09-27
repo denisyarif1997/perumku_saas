@@ -113,6 +113,32 @@ class User extends Authenticatable
     }
 
     /**
+     * Akun yang terhubung ke data warga, apa pun perannya.
+     *
+     * Berbeda dengan isResident() yang menilai PERAN, method ini menilai
+     * keterikatan akun ke data warga (resident_id). Warga yang juga diberi
+     * tugas admin/RT/dll tetap punya data warga, sehingga bisa memakai area
+     * warga tanpa harus log out.
+     */
+    public function hasResidentProfile(): bool
+    {
+        return $this->resident_id !== null;
+    }
+
+    /**
+     * Boleh berpindah dari area admin ke area warga.
+     *
+     * Syaratnya dua: akunnya terikat ke data warga (resident_id) dan punya
+     * akses area admin. Gerbangnya memakai permission access-admin yang sama
+     * dengan middleware di routes/web.php — warga murni tidak memiliki
+     * permission itu sehingga tidak akan melihat tombol ini.
+     */
+    public function canSwitchToResidentArea(): bool
+    {
+        return $this->hasResidentProfile() && $this->hasPermission('access-admin');
+    }
+
+    /**
      * User aktif yang berperan staf dengan permission tertentu.
      * Role super_admin dianggap memiliki semua permission.
      */

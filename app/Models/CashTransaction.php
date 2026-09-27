@@ -13,12 +13,26 @@ class CashTransaction extends Model
 {
     use BelongsToEstate, SoftDeletes;
 
-    /** Mutasi kas mengikuti estate dari akun kasnya. */
+    /**
+     * Mutasi kas mengikuti estate dari akun kasnya.
+     *
+     * Akun kas boleh ber-housing_estate_id NULL (kas bersama untuk seluruh
+     * perumahan), jadi aturan ini sama dengan CashAccount: baris estate X
+     * PLUS baris global. Tanpa orWhereNull di sini, transaksi kas bersama
+     * hilang dari penghuni estate — akunnya tetap tampil di Daftar Kas, tetapi
+     * riwayatnya tidak terlihat dan kolom Saldo Sekarang hanya menghitung
+     * saldo awal.
+     */
     public function applyEstateScope(Builder $query, int $estateId): void
     {
-        $query->where(function (Builder $q) use ($estateId) {
-            $q->whereHas('account', fn (Builder $a) => $a->where('housing_estate_id', $estateId))
-                ->orWhereHas('destinationAccount', fn (Builder $a) => $a->where('housing_estate_id', $estateId));
+        $accountInScope = fn (Builder $account) => $account
+            ->where(fn (Builder $row) => $row
+                ->where('housing_estate_id', $estateId)
+                ->orWhereNull('housing_estate_id'));
+
+        $query->where(function (Builder $q) use ($accountInScope) {
+            $q->whereHas('account', $accountInScope)
+                ->orWhereHas('destinationAccount', $accountInScope);
         });
     }
 

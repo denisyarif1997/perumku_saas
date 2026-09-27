@@ -120,6 +120,34 @@ class ForumTest extends TestCase
             ->assertSee('Ayo ikut lomba kebersihan akhir pekan ini.');
     }
 
+    /**
+     * Regression: modal composer pernah kosong, sehingga warga menekan
+     * "Buat Postingan" lalu tidak bisa mengisi apa pun. Test lain memanggil
+     * submit() secara langsung sehingga form-nya tidak pernah dirender.
+     */
+    public function test_resident_composer_form_actually_renders_its_inputs(): void
+    {
+        Livewire::actingAs($this->residentUser())
+            ->test(ResidentForumIndex::class)
+            ->assertSet('showForm', false)
+            ->assertDontSee('wire:model="title"', false)
+            ->call('openForm')
+            ->assertSet('showForm', true)
+            ->assertSee('Buat Postingan')
+            ->assertSee('wire:model="title"', false)
+            ->assertSee('wire:model="body"', false)
+            ->assertSee('wire:model="category"', false)
+            ->assertSee('wire:submit="submit"', false)
+            ->assertSee('Jadikan Polling')
+            ->set('isPoll', true)
+            ->assertSee('Mode Polling')
+            ->assertSee('wire:model="pollChoices.0"', false)
+            ->assertSee('wire:click="addPollChoice"', false)
+            ->call('closeForm')
+            ->assertSet('showForm', false)
+            ->assertDontSee('wire:model="title"', false);
+    }
+
     public function test_resident_can_comment_on_a_post(): void
     {
         $post = $this->makePost();

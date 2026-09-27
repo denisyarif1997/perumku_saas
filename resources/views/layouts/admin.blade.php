@@ -37,7 +37,11 @@
                 $navLink = 'flex items-center gap-3 rounded-xl px-3 py-2.5 transition';
                 $navIdle = 'hover:bg-teal-50 hover:text-teal-800';
                 $navGroup = 'px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-[#64748B]';
-                $sections = \App\Support\AdminMenu::forUser(auth()->user());
+                $currentUser = auth()->user();
+                $sections = \App\Support\AdminMenu::forUser($currentUser);
+                // Warga yang diberi tugas admin/RT/dll tetap punya data warga,
+                // sehingga bisa masuk ke area warga tanpa perlu log out.
+                $residentAreaRoute = $currentUser?->canSwitchToResidentArea() ? 'resident.dashboard' : null;
             @endphp
 
             @foreach ($sections as $section)
@@ -51,6 +55,15 @@
                     </a>
                 @endforeach
             @endforeach
+
+            @if ($residentAreaRoute)
+                <div class="border-t border-[#EEF2F1] pt-3">
+                    <a href="{{ route($residentAreaRoute) }}" wire:navigate
+                        class="{{ $navLink }} bg-teal-50 font-semibold text-teal-800 hover:bg-teal-100">
+                        <i data-lucide="user-round" class="h-4 w-4"></i> Beralih ke Tampilan Warga
+                    </a>
+                </div>
+            @endif
         </nav>
     </aside>
 
@@ -82,6 +95,15 @@
                         </a>
                     @endforeach
                 @endforeach
+
+                @if ($residentAreaRoute)
+                    <div class="border-t border-[#EEF2F1] pt-3">
+                        <a href="{{ route($residentAreaRoute) }}" wire:navigate @click="sidebar=false"
+                            class="flex items-center gap-3 rounded-xl bg-teal-50 px-3 py-2.5 font-semibold text-teal-800 transition hover:bg-teal-100">
+                            <i data-lucide="user-round" class="h-4 w-4"></i> Beralih ke Tampilan Warga
+                        </a>
+                    </div>
+                @endif
             </nav>
         </aside>
     </div>

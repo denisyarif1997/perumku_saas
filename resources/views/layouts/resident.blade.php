@@ -51,7 +51,19 @@
                 </div>
                 <p class="font-bold tracking-tight text-[#134E4A]">{{ config('app.name', 'HousingHub') }}</p>
             </a>
+            @php
+                // Tombol keluar dari area warga menuju area admin. Hanya untuk
+                // akun yang juga punya akses admin, dan mengarah ke modul yang
+                // benar-benar boleh dibuka (bukan selalu dashboard).
+                $adminLandingRoute = \App\Support\AdminMenu::landingRouteFor(auth()->user());
+            @endphp
             <div class="flex items-center gap-2">
+                @if ($adminLandingRoute)
+                    <a href="{{ route($adminLandingRoute) }}" wire:navigate title="Kembali ke Admin"
+                        class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#134E4A] shadow-sm transition active:scale-95">
+                        <i data-lucide="layout-dashboard" class="h-5 w-5"></i>
+                    </a>
+                @endif
                 <livewire:notifications />
                 <button type="button" data-theme-toggle
                     class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#134E4A] shadow-sm transition active:scale-95"
@@ -76,6 +88,7 @@
         $navItems = [
             ['resident.dashboard', 'home', 'Home', 'resident.dashboard'],
             ['resident.ipl.index', 'wallet', 'Iuran', 'resident.ipl.*'],
+            ['resident.cash.index', 'banknote', 'Kas', 'resident.cash.*'],
             ['resident.chess.index', 'crown', 'Catur', 'resident.chess.*'],
             ['resident.forum.index', 'messages-square', 'Forum', 'resident.forum.*'],
             ['resident.complaints.index', 'wrench', 'Aduan', 'resident.complaints.*'],

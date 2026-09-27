@@ -104,10 +104,28 @@
                     <p class="mt-1 text-[12px] text-[#64748B]">
                         {{ $post->authorName() }}@if ($house = $post->authorHouseLabel()) · Rumah {{ $house }} @endif
                         · {{ $post->created_at->diffForHumans() }}
-                        @if ($post->is_poll)
-                            · {{ $post->poll_voters_count ?? 0 }} memilih
-                        @endif
                     </p>
+
+                    @if ($post->is_poll)
+                        <div class="mt-2 rounded-xl bg-purple-50 p-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-[12px] font-semibold text-purple-900">
+                                    {{ $post->pollTypeLabel() }} · {{ $post->isPollOpen() ? 'Berlangsung' : 'Ditutup' }}
+                                </p>
+                                <p class="shrink-0 text-[12px] text-purple-800">{{ $post->poll_voters_count ?? 0 }} warga sudah memilih</p>
+                            </div>
+                            <div class="mt-1.5 flex flex-wrap gap-1">
+                                @foreach ($post->pollOptions() as $optionLabel)
+                                    <span class="rounded-lg bg-white px-2 py-0.5 text-[12px] text-purple-900">{{ $optionLabel }}</span>
+                                @endforeach
+                            </div>
+                            @if ($post->isPollOpen())
+                                <p class="mt-1.5 flex items-center gap-1 text-[12px] font-semibold text-purple-800">
+                                    Ikut Polling <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+                                </p>
+                            @endif
+                        </div>
+                    @endif
                 </a>
 
                 <div class="flex shrink-0 flex-col items-end justify-between">
@@ -140,8 +158,119 @@
 
     <div>{{ $posts->links() }}</div>
 
-    {{-- Modal form: dipertahankan sama seperti sebelumnya --}}
+    {{-- Modal composer: buat diskusi baru atau polling baru --}}
     @if ($showForm)
-        {{-- ... isi modal sama persis seperti versi lama, tidak diubah ... --}}
+        <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+            wire:click.self="closeForm">
+            <div class="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[24px] bg-white sm:rounded-[24px]">
+                <div class="flex items-center justify-between gap-3 border-b border-[#E2E8F0] px-4 py-3">
+                    <p class="font-bold text-[#134E4A]">Buat Postingan</p>
+                    <button type="button" wire:click="closeForm" aria-label="Tutup form"
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F0]">
+                        <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
+                </div>
+
+                <form wire:submit="submit" class="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+                    <x-ui.field label="Judul" :error="$errors->first('title')">
+                        <input wire:model="title" maxlength="150" placeholder="Contoh: air keran keruh sejak kemarin"
+                            class="min-h-[46px] w-full rounded-2xl border border-[#EEF2F1] bg-[#F6F8F7] px-3.5 text-[15px] outline-none focus:border-teal-600">
+                    </x-ui.field>
+
+                    <x-ui.field label="Isi" :error="$errors->first('body')">
+                        <textarea wire:model="body" rows="4" maxlength="3000"
+                            placeholder="Ceritakan lebih detail agar warga lain bisa membantu."
+                            class="w-full rounded-2xl border border-[#EEF2F1] bg-[#F6F8F7] p-3.5 text-[15px] outline-none focus:border-teal-600"></textarea>
+                    </x-ui.field>
+
+                    <x-ui.field label="Kategori" :error="$errors->first('category')">
+                        <select wire:model="category" class="min-h-[46px] w-full rounded-2xl border border-[#EEF2F1] bg-[#F6F8F7] px-3.5 text-[15px]">
+                            @foreach ($categories as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </x-ui.field>
+
+                    {{-- Beralih ke mode polling --}}
+                    @if ($isPoll)
+                        <div class="space-y-3 rounded-2xl bg-purple-50 p-3.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="flex items-center gap-1.5 text-[14px] font-bold text-purple-800">
+                                    <i data-lucide="bar-chart-3" class="h-4 w-4"></i> Mode Polling
+                                </p>
+                                <button type="button" wire:click="disablePoll" class="text-[13px] font-semibold text-purple-800 underline">
+                                    Kembali ke diskusi biasa
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <select wire:model="pollType" aria-label="Cara memilih"
+                                    class="min-h-[44px] w-full rounded-xl border border-purple-200 bg-white px-3 text-[14px]">
+                                    <option value="single">Pilih satu</option>
+                                    <option value="multiple">Pilih beberapa</option>
+                                </select>
+                                <select wire:model="pollDuration" aria-label="Berlaku sampai"
+                                    class="min-h-[44px] w-full rounded-xl border border-purple-200 bg-white px-3 text-[14px]">
+                                    <option value="1">1 hari</option>
+                                    <option value="3">3 hari</option>
+                                    <option value="7">7 hari</option>
+                                    <option value="30">30 hari</option>
+                                    <option value="0">Tanpa batas</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <p class="mb-1.5 text-[13px] font-medium text-purple-900">Pilihan (minimal dua, berbeda)</p>
+                                <div class="space-y-2">
+                                    @foreach ($pollChoices as $index => $choice)
+                                        <div class="flex items-center gap-2" wire:key="poll-choice-{{ $index }}">
+                                            <input wire:model="pollChoices.{{ $index }}" maxlength="100" placeholder="Pilihan {{ $index + 1 }}"
+                                                class="min-h-[44px] w-full rounded-xl border border-purple-200 bg-white px-3 text-[14px] outline-none focus:border-purple-400">
+                                            @if (count($pollChoices) > 2)
+                                                <button type="button" wire:click="removePollChoice({{ $index }})"
+                                                    aria-label="Hapus pilihan {{ $index + 1 }}"
+                                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-600">
+                                                    <i data-lucide="minus" class="h-4 w-4"></i>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                @if ($errors->first('pollChoices'))
+                                    <p class="mt-1 text-[13px] text-red-600">{{ $errors->first('pollChoices') }}</p>
+                                @endif
+                                @error('pollChoices.*')
+                                    <p class="mt-1 text-[13px] text-red-600">{{ $message }}</p>
+                                @enderror
+
+                                @if (count($pollChoices) < $maxPollChoices)
+                                    <button type="button" wire:click="addPollChoice"
+                                        class="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-purple-800 underline">
+                                        <i data-lucide="plus" class="h-3.5 w-3.5"></i> Tambah pilihan
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        <button type="button" wire:click="$set('isPoll', true)"
+                            class="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-purple-300 bg-purple-50 py-3 text-[14px] font-semibold text-purple-800">
+                            <i data-lucide="bar-chart-3" class="h-4 w-4"></i> Jadikan Polling
+                        </button>
+                    @endif
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button type="button" wire:click="closeForm" class="min-h-[46px] rounded-2xl border border-[#E2E8F0] bg-white font-semibold">
+                            Batal
+                        </button>
+                        <button type="submit" wire:loading.attr="disabled" wire:target="submit"
+                            class="min-h-[46px] rounded-2xl bg-teal-700 font-semibold text-white disabled:opacity-60">
+                            <span wire:loading.remove wire:target="submit">Bagikan</span>
+                            <span wire:loading wire:target="submit">Mengirim...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     @endif
+</div>
 </div>

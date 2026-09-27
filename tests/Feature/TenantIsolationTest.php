@@ -6,6 +6,8 @@ use App\Livewire\Admin\Blocks\Index as BlockIndex;
 use App\Livewire\Auth\Register;
 use App\Livewire\Resident\Complaints\Index as ResidentComplaintsIndex;
 use App\Models\Billing;
+use App\Models\CashAccount;
+use App\Models\CashTransaction;
 use App\Models\Complaint;
 use App\Models\House;
 use App\Models\HouseResident;
@@ -96,6 +98,35 @@ class TenantIsolationTest extends TestCase
             'role_id' => $this->roleId($roleSlug),
             'housing_estate_id' => $estateId,
             'status' => 'active',
+        ]);
+    }
+
+    /**
+     * Buat akun kas. housing_estate_id null berarti kas bersama yang dipakai
+     * seluruh perumahan.
+     */
+    protected function makeCashAccount(?int $estateId, string $name, float $openingBalance): CashAccount
+    {
+        // Dibuat tanpa filter estate: pemanggil sering sudah beractingAs
+        // sebagai user estate lain, sehingga baris estate A tidak terlihat.
+        return CashAccount::withoutGlobalScope(BelongsToEstateScope::class)->create([
+            'housing_estate_id' => $estateId,
+            'name' => $name,
+            'type' => 'cash',
+            'opening_balance' => $openingBalance,
+            'status' => 'active',
+        ]);
+    }
+
+    protected function makeCashIn(CashAccount $account, float $amount): CashTransaction
+    {
+        return CashTransaction::withoutGlobalScope(BelongsToEstateScope::class)->create([
+            'cash_account_id' => $account->id,
+            'type' => CashTransaction::TYPE_IN,
+            'amount' => $amount,
+            'transaction_date' => now()->toDateString(),
+            'category' => 'ipl',
+            'description' => 'Iuran '.now()->format('F Y'),
         ]);
     }
 
@@ -286,6 +317,59 @@ class TenantIsolationTest extends TestCase
         $this->actingAs($wargaB);
         $this->assertNotNull(Post::find($postB->id));
         $this->assertNull(Post::find($postA->id));
+    }
+
+    public function test_cash_transactions_of_shared_account_stay_visible(): void
+    {
+        // Akun kas boleh dibuat tanpa memilih perumahan, yaitu
+        // housing_estate_id NULL = kas bersama untuk seluruh perumahan. Aturan
+        // isolasi tenant tetap memberi baris global kepada penghuni estate
+        // (sama seperti CashAccount sendiri), jadi mutasinya juga harus ikut
+        // terlihat — kalau tidak, akunnya tampil di Daftar Kas tetapi
+        // riwayatnya hilang dan Saldo Sekarang hanya menghitung saldo awal.
+        $adminA = $this->estateAdminA();
+        $estateAId = $this->estateA()->id;
+
+        $akunA = $this->makeCashAccount($estateAId, 'Kas RT 01', 1000000);
+        $akunShared = $this->makeCashAccount(null, 'Kas Bersama', 500000);
+
+        $this->makeCashIn($akunA, 250000);
+        $this->makeCashIn($akunShared, 300000);
+
+        $this->actingAs($adminA);
+
+        // Kedua akun terlihat, dan transaksi keduanya ikut terbawa.
+        $this->assertNotNull(CashAccount::find($akunShared->id));
+        $this->assertSame(2, CashTransaction::count());
+        $this->assertNotNull(CashTransaction::where('cash_account_id', $akunShared->id)->first());
+
+        // Saldo kas bersama wajib ikut menghitung transaksinya sendiri.
+        $this->assertSame(800000.0, CashAccount::find($akunShared->id)->currentBalance());
+        $this->assertSame(1250000.0, CashAccount::find($akunA->id)->currentBalance());
+    }
+
+    public function test_cash_transactions_of_another_estate_account_stay_hidden(): void
+    {
+        // Larangan bocor antar-hook: orWhereNull di scope CashTransaction hanya
+        // boleh membuka baris GLOBAL, tidak boleh membuka akun estate lain.
+        [, , , $wargaB] = $this->makeEstateB();
+        $estateBId = $wargaB->housing_estate_id;
+
+        $akunShared = $this->makeCashAccount(null, 'Kas Bersama', 500000);
+        $akunB = $this->makeCashAccount($estateBId, 'Kas Estate B', 750000);
+
+        $this->makeCashIn($akunShared, 300000);
+        $transaksiB = $this->makeCashIn($akunB, 900000);
+
+        $this->actingAs($this->estateAdminA());
+
+        $this->assertNotNull(CashTransaction::where('cash_account_id', $akunShared->id)->first());
+        $this->assertNull(CashTransaction::find($transaksiB->id));
+        $this->assertNull(CashAccount::find($akunB->id));
+
+        // Bolak-balik: penghuni estate B tetap melihat kasnya sendiri.
+        $this->actingAs($wargaB);
+        $this->assertNotNull(CashTransaction::find($transaksiB->id));
     }
 
     public function test_estate_admin_cannot_write_rows_into_another_estate(): void

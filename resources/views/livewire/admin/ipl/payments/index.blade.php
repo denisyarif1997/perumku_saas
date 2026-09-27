@@ -57,9 +57,12 @@
                 </div>
 
                 @if ($payment->hasProof())
-                    <a href="{{ $payment->proofUrl() }}" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold underline">
+                    <button wire:click="viewProof({{ $payment->id }})"
+                        class="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-teal-700 underline">
                         <i data-lucide="image" class="h-3.5 w-3.5"></i> Lihat bukti pembayaran
-                    </a>
+                    </button>
+                @else
+                    <p class="mt-2 text-[13px] text-[#94A3B8]">Bukti bayar: tidak ada</p>
                 @endif
 
                 @if ($rejectingId === $payment->id)
@@ -97,6 +100,7 @@
                     <th class="px-4 py-3">Tanggal</th>
                     <th class="px-4 py-3">Metode</th>
                     <th class="px-4 py-3">Nominal</th>
+                    <th class="px-4 py-3">Bukti Bayar</th>
                     <th class="px-4 py-3">Status</th>
                     <th class="px-4 py-3 text-right">Aksi</th>
                 </tr>
@@ -119,6 +123,16 @@
                         <td class="px-4 py-3">{{ $payment->payment_date?->format('d/m/Y') }}</td>
                         <td class="px-4 py-3">{{ $payment->methodLabel() }}</td>
                         <td class="px-4 py-3 font-semibold">@rupiah($payment->amount)</td>
+                        <td class="px-4 py-3">
+                            @if ($payment->hasProof())
+                                <button wire:click="viewProof({{ $payment->id }})"
+                                    class="inline-flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-2.5 py-1.5 text-[13px] font-semibold text-teal-700 transition hover:bg-teal-50">
+                                    <i data-lucide="image" class="h-3.5 w-3.5"></i> Lihat
+                                </button>
+                            @else
+                                <span class="text-[#94A3B8]">Tidak ada</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3"><x-ui.badge color="{{ $payment->statusColor() }}">{{ $payment->statusLabel() }}</x-ui.badge></td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
                             @if ($payment->status === 'pending')
@@ -131,13 +145,49 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="px-4 py-8 text-center text-[#64748B]">Belum ada data pembayaran.</td></tr>
+                    <tr><td colspan="9" class="px-4 py-8 text-center text-[#64748B]">Belum ada data pembayaran.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
     <div>{{ $payments->links() }}</div>
+
+    {{-- Popup bukti bayar --}}
+    @if ($viewingProof)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            wire:click.self="closeProof"
+            wire:key="proof-modal">
+            <div class="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+                <div class="flex items-start justify-between gap-3 border-b border-[#E2E8F0] p-4">
+                    <div class="min-w-0">
+                        <p class="font-bold">Bukti Bayar</p>
+                        <p class="truncate font-mono text-[12px] text-[#64748B]">{{ $viewingProof->payment_number }}</p>
+                        <p class="text-[12px] text-[#64748B]">
+                            {{ $viewingProof->resident?->name ?? '-' }} · @rupiah($viewingProof->amount)
+                        </p>
+                    </div>
+                    <button wire:click="closeProof" aria-label="Tutup bukti bayar"
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F0]">
+                        <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
+                </div>
+
+                <div class="min-h-0 flex-1 overflow-auto bg-slate-50 p-4">
+                    <img src="{{ $viewingProof->proofUrl() }}" alt="Bukti bayar {{ $viewingProof->payment_number }}"
+                        class="mx-auto max-h-[70vh] w-auto rounded-xl border border-[#E2E8F0] bg-white object-contain">
+                </div>
+
+                <div class="flex items-center justify-between gap-2 border-t border-[#E2E8F0] p-4">
+                    <p class="truncate text-[12px] text-[#64748B]">{{ $viewingProof->proof_name ?? '-' }}</p>
+                    <a href="{{ $viewingProof->proofUrl() }}" target="_blank" rel="noopener"
+                        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#E2E8F0] px-3 py-2 text-[13px] font-semibold">
+                        <i data-lucide="external-link" class="h-3.5 w-3.5"></i> Buka di tab baru
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Popup verifikasi: pilih kas tujuan pemasukan --}}
     @if ($verifyingId)

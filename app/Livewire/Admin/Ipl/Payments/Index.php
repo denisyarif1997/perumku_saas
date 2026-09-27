@@ -28,6 +28,9 @@ class Index extends Component
 
     public string $cash_account_id = '';
 
+    /** Id pembayaran yang buktinya sedang dibuka di popup. */
+    public ?int $viewingProofId = null;
+
     public function mount(): void
     {
         abort_unless(
@@ -36,6 +39,25 @@ class Index extends Component
         );
 
         $this->statusFilter = 'pending';
+    }
+
+    /**
+     * Buka popup bukti bayar. Membaca lewat findOrFail (bukan id mentah) supaya
+     * pembayaran milik estate lain tetap 404 dan policy ikut dicek di sini,
+     * bukan hanya di controller bukti bayar.
+     */
+    public function viewProof(int $id): void
+    {
+        $payment = Payment::findOrFail($id);
+
+        $this->authorize('view', $payment);
+
+        $this->viewingProofId = $payment->id;
+    }
+
+    public function closeProof(): void
+    {
+        $this->viewingProofId = null;
     }
 
     public function updated(string $property): void
@@ -242,6 +264,9 @@ class Index extends Component
                 ->orderByDesc('payment_date')
                 ->orderByDesc('id')
                 ->paginate(15),
+            // Dimuat hanya saat popup terbuka, supaya halaman daftar tidak
+            // menarik kolom BLOB (maks 2 MB) untuk setiap baris.
+            'viewingProof' => $this->viewingProofId ? Payment::find($this->viewingProofId) : null,
             'accounts' => CashAccount::active()->orderBy('name')->get(),
             'summary' => [
                 'pending' => Payment::where('status', 'pending')->count(),

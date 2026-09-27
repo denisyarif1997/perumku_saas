@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\IplBillingService;
 use Database\Seeders\HousingSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
@@ -264,6 +265,78 @@ class IplBillingTest extends TestCase
             'type' => CashTransaction::TYPE_IN,
             'amount' => (float) $billing->total,
         ]);
+    }
+
+    public function test_payment_list_marks_missing_proof_and_opens_existing_proof(): void
+    {
+        $this->makeRate();
+        app(IplBillingService::class)->generate(now()->year, now()->month, null, 10, $this->admin()->id);
+
+        $billing = Billing::firstOrFail();
+        $residentId = Resident::firstOrFail()->id;
+
+        $denganBukti = Payment::create([
+            'payment_number' => Payment::generateNumber($billing),
+            'billing_id' => $billing->id,
+            'resident_id' => $residentId,
+            'amount' => (float) $billing->total,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'transfer',
+            'proof_blob' => 'GIF89a-bukti',
+            'proof_mime' => 'image/gif',
+            'proof_name' => 'bukti.gif',
+            'status' => 'pending',
+        ]);
+
+        $tanpaBukti = Payment::create([
+            'payment_number' => 'PAY/20260101/TANPA-BUKTI-01',
+            'billing_id' => $billing->id,
+            'resident_id' => $residentId,
+            'amount' => 50000,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'status' => 'pending',
+        ]);
+
+        $this->assertFalse($tanpaBukti->hasProof());
+
+        // Kolom bukti bayar ada, dan yang tidak punya bukti ditandai jelas.
+        Livewire::actingAs($this->admin())
+            ->test(Index::class)
+            ->assertOk()
+            ->assertSee('Bukti Bayar')
+            ->assertSee('Tidak ada')
+            ->assertSee('Lihat', false);
+
+        // Membuka bukti menampilkan gambarnya lewat route bukti bayar.
+        Livewire::actingAs($this->admin())
+            ->test(Index::class)
+            ->call('viewProof', $denganBukti->id)
+            ->assertSet('viewingProofId', $denganBukti->id)
+            ->assertSee(route('payments.proof', $denganBukti), false)
+            ->assertSee('Buka di tab baru')
+            ->call('closeProof')
+            ->assertSet('viewingProofId', null)
+            ->assertDontSee(route('payments.proof', $denganBukti), false);
+    }
+
+    public function test_opening_proof_of_unreachable_payment_is_not_found(): void
+    {
+        // Pengguna tanpa verify-payment/manage-payment tidak boleh membuka
+        // panel pembayaran sama sekali.
+        $role = Role::create(['name' => 'Tanpa Akses Bayar', 'slug' => 'tanpa_akses_bayar', 'status' => 'active']);
+        $user = User::factory()->create(['role_id' => $role->id, 'status' => 'active']);
+        $this->actingAs($user)->get(route('admin.ipl.payments.index'))->assertForbidden();
+
+        // Pembayaran yang tidak ada (atau milik estate lain) tidak boleh
+        // dibuka lewat aksi viewProof. ModelNotFoundException inilah yang
+        // dirender Laravel sebagai 404, jadi tidak membocorkan keberadaan
+        // pembayaran milik tenant lain.
+        $this->expectException(ModelNotFoundException::class);
+
+        Livewire::actingAs($this->admin())
+            ->test(Index::class)
+            ->call('viewProof', 999999);
     }
 
     public function test_admin_verification_is_blocked_without_cash_account(): void

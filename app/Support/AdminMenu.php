@@ -56,6 +56,51 @@ class AdminMenu
     }
 
     /**
+     * Route admin pertama yang benar-benar boleh diakses user, atau null bila
+     * user tidak punya akses area admin sama sekali.
+     *
+     * Dipakai oleh kedua arah perpindahan tampilan: tombol di area warga
+     * (header + halaman profil) untuk kembali ke admin.
+     *
+     * Gerbahnya memakai permission (access-admin) yang sama dengan middleware
+     * di routes/web.php, bukan nama role. Role bisa diubah bebas lewat halaman
+     * Role & Akses, sehingga memfilternya per role membuat tombol ini muncul
+     * untuk user yang akhirnya kena 403 — atau hilang untuk user yang
+     * sebenarnya boleh masuk.
+     */
+    public static function landingRouteFor(User $user): ?string
+    {
+        if (! $user->hasPermission('access-admin')) {
+            return null;
+        }
+
+        if ($user->hasPermission('view-dashboard')) {
+            return 'admin.dashboard';
+        }
+
+        // Tanpa izin lihat dashboard, arahkan ke modul pertama yang boleh dibuka.
+        // Yang dicek adalah permission AKSI (penjaga route), bukan permission menu
+        // (filter sidebar), supaya role hasil editan manual tetap punya tujuan
+        // yang benar-benar bisa dimuat.
+        foreach (self::sections() as $section) {
+            foreach ($section['items'] as $item) {
+                $roles = $item[6] ?? [];
+                if ($roles !== [] && ! $user->hasRole(...$roles)) {
+                    continue;
+                }
+
+                [$route, , , , , $actionSlugs] = $item;
+
+                if ($user->hasPermission(...$actionSlugs)) {
+                    return $route;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Filter menu sesuai permission user. Setiap item dicek dengan permission
      * per-menu (menu-...) terlebih dahulu. Jika permission per-menu tersebut
      * belum terdaftar di database (sebelum seeder dijalankan ulang), fallback
