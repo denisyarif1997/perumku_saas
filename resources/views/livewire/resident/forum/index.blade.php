@@ -48,8 +48,8 @@
     {{-- Pencarian + dua dropdown ringkas --}}
     <div class="flex gap-2">
         <div class="relative min-w-0 flex-1">
-            <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"></i>
-            <input wire:model.live.debounce.300ms="search" type="search" placeholder="Cari diskusi..."
+            <i data-lucide="search" class="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"></i>
+            <input wire:model.live.debounce.300ms="search" type="search" placeholder="    Cari diskusi..."
                 class="min-h-[42px] w-full rounded-xl border border-[#E2E8F0] bg-white pl-9 pr-3 text-[14px] outline-none focus:border-teal-600">
         </div>
         <select wire:model.live="scopeFilter" aria-label="Tampilkan"
@@ -136,10 +136,10 @@
                         {{ $post->comments_count ?? 0 }}
                     </span>
                     @can('delete', $post)
-                        <button type="button" 
-                            wire:click.stop="delete({{ $post->id }})" 
+                        <button type="button"
+                            wire:click.stop="delete({{ $post->id }})"
                             wire:confirm="Hapus postingan ini beserta komentarnya?"
-                            class="mt-1 flex h-7 w-7 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 active:scale-95" 
+                            class="mt-1 flex h-7 w-7 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 active:scale-95"
                             title="Hapus">
                             <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
                         </button>
@@ -164,7 +164,6 @@
 
     <div>{{ $posts->links() }}</div>
 
-<<<<<<< HEAD
     {{-- Modal composer: buat diskusi baru atau polling baru --}}
     @if ($showForm)
         <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
@@ -265,6 +264,7 @@
                             <i data-lucide="bar-chart-3" class="h-4 w-4"></i> Jadikan Polling
                         </button>
                     @endif
+
                     <div class="grid grid-cols-2 gap-2 pt-1">
                         <button type="button" wire:click="closeForm" class="min-h-[46px] rounded-2xl border border-[#E2E8F0] bg-white font-semibold">
                             Batal
@@ -280,11 +280,3 @@
         </div>
     @endif
 </div>
-</div>
-=======
-    {{-- Modal form --}}
-    @if ($showForm)
-        {{-- ... isi modal form ... --}}
-    @endif
-</div>
->>>>>>> c113624db209563202d44ea53b22d66067dbe086
