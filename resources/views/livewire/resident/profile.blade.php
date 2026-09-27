@@ -36,8 +36,8 @@
 
     <div class="space-y-2">
         <p class="px-1 text-[15px] font-bold text-[#134E4A]">Menu</p>
-        @if (! $user->hasRole('resident'))
-            <a href="{{ route('admin.dashboard') }}" class="flex min-h-[54px] items-center gap-3 rounded-2xl bg-white px-5 text-[15px] font-medium shadow-[0_8px_30px_-6px_rgba(19,78,74,0.12)] transition active:scale-[0.98]"><i data-lucide="layout-dashboard" class="h-5 w-5 text-teal-700"></i>Dashboard Admin</a>
+        @if ($adminLanding)
+            <a href="{{ route($adminLanding) }}" class="flex min-h-[54px] items-center gap-3 rounded-2xl bg-white px-5 text-[15px] font-semibold text-teal-700 shadow-[0_8px_30px_-6px_rgba(19,78,74,0.12)] transition active:scale-[0.98]"><i data-lucide="layout-dashboard" class="h-5 w-5 text-teal-700"></i>Beralih ke Tampilan Admin</a>
         @endif
         <form method="POST" action="{{ route('logout') }}">@csrf
             <button class="flex min-h-[54px] w-full items-center gap-3 rounded-2xl bg-white px-5 text-[15px] font-semibold text-red-600 shadow-[0_8px_30px_-6px_rgba(19,78,74,0.12)] transition active:scale-[0.98]"><i data-lucide="log-out" class="h-5 w-5"></i>Keluar</button>

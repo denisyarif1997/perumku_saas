@@ -80,7 +80,9 @@ class Index extends Component
         }
 
         $data = $this->validate([
-            'cash_account_id' => ['nullable', 'exists:cash_accounts,id'],
+            'cash_account_id' => ['required', 'exists:cash_accounts,id'],
+        ], [
+            'cash_account_id.required' => 'Kas tujuan wajib dipilih.',
         ]);
 
         $payment = Payment::with(['billing', 'resident'])->findOrFail($this->verifyingId);
@@ -92,7 +94,7 @@ class Index extends Component
             return;
         }
 
-        $account = $data['cash_account_id'] ? CashAccount::findOrFail($data['cash_account_id']) : null;
+        $account = CashAccount::findOrFail($data['cash_account_id']);
 
         DB::transaction(function () use ($payment, $account) {
             $payment->update([
@@ -102,18 +104,15 @@ class Index extends Component
                 'rejection_reason' => null,
             ]);
 
-            $cashEntry = null;
-            if ($account) {
-                $cashEntry = CashTransaction::recordForPayment($payment, $account, (int) auth()->id());
+            $cashEntry = CashTransaction::recordForPayment($payment, $account, (int) auth()->id());
 
-                if ($cashEntry) {
-                    ActivityLog::record([
-                        'user_id' => auth()->id(), 'action' => 'create', 'module' => 'cash_transactions',
-                        'subject_type' => CashTransaction::class, 'subject_id' => $cashEntry->id,
-                        'description' => 'Kas masuk otomatis dari pembayaran '.$payment->payment_number.' ke '.$account->name,
-                        'new_values' => $cashEntry->toArray(),
-                    ]);
-                }
+            if ($cashEntry) {
+                ActivityLog::record([
+                    'user_id' => auth()->id(), 'action' => 'create', 'module' => 'cash_transactions',
+                    'subject_type' => CashTransaction::class, 'subject_id' => $cashEntry->id,
+                    'description' => 'Kas masuk otomatis dari pembayaran '.$payment->payment_number.' ke '.$account->name,
+                    'new_values' => $cashEntry->toArray(),
+                ]);
             }
 
             $payment->billing?->syncPaymentStatus();
@@ -121,8 +120,7 @@ class Index extends Component
             ActivityLog::record([
                 'user_id' => auth()->id(), 'action' => 'approve', 'module' => 'payments',
                 'subject_type' => Payment::class, 'subject_id' => $payment->id,
-                'description' => 'Memverifikasi pembayaran '.$payment->payment_number
-                    .($account ? ' (masuk kas '.$account->name.')' : ' (tanpa pencatatan kas)'),
+                'description' => 'Memverifikasi pembayaran '.$payment->payment_number.' (masuk kas '.$account->name.')',
                 'new_values' => $payment->fresh()->toArray(),
             ]);
         });

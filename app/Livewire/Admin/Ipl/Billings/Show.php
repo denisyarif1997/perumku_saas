@@ -67,15 +67,16 @@ class Show extends Component
             'payment_date' => ['required', 'date'],
             'reference_number' => ['nullable', 'string', 'max:100'],
             'payment_notes' => ['nullable', 'string', 'max:500'],
-            'payment_cash_account_id' => ['nullable', 'exists:cash_accounts,id'],
+            'payment_cash_account_id' => ['required', 'exists:cash_accounts,id'],
         ], [
             'payment_amount.required' => 'Nominal pembayaran wajib diisi.',
             'payment_amount.min' => 'Nominal pembayaran harus lebih dari 0.',
             'payment_date.required' => 'Tanggal pembayaran wajib diisi.',
+            'payment_cash_account_id.required' => 'Kas tujuan wajib dipilih.',
         ]);
 
         $billing = $this->billing;
-        $account = $data['payment_cash_account_id'] ? CashAccount::findOrFail($data['payment_cash_account_id']) : null;
+        $account = CashAccount::findOrFail($data['payment_cash_account_id']);
 
         DB::transaction(function () use ($billing, $data, $account) {
             $payment = Payment::create([
@@ -94,18 +95,15 @@ class Show extends Component
                 'notes' => $data['payment_notes'] ?: 'Dicatat manual oleh pengelola.',
             ]);
 
-            $cashEntry = null;
-            if ($account) {
-                $cashEntry = CashTransaction::recordForPayment($payment, $account, (int) auth()->id());
+            $cashEntry = CashTransaction::recordForPayment($payment, $account, (int) auth()->id());
 
-                if ($cashEntry) {
-                    ActivityLog::record([
-                        'user_id' => auth()->id(), 'action' => 'create', 'module' => 'cash_transactions',
-                        'subject_type' => CashTransaction::class, 'subject_id' => $cashEntry->id,
-                        'description' => 'Kas masuk otomatis dari pembayaran '.$payment->payment_number.' ke '.$account->name,
-                        'new_values' => $cashEntry->toArray(),
-                    ]);
-                }
+            if ($cashEntry) {
+                ActivityLog::record([
+                    'user_id' => auth()->id(), 'action' => 'create', 'module' => 'cash_transactions',
+                    'subject_type' => CashTransaction::class, 'subject_id' => $cashEntry->id,
+                    'description' => 'Kas masuk otomatis dari pembayaran '.$payment->payment_number.' ke '.$account->name,
+                    'new_values' => $cashEntry->toArray(),
+                ]);
             }
 
             $billing->syncPaymentStatus();
@@ -113,8 +111,7 @@ class Show extends Component
             ActivityLog::record([
                 'user_id' => auth()->id(), 'action' => 'create', 'module' => 'payments',
                 'subject_type' => Billing::class, 'subject_id' => $billing->id,
-                'description' => 'Mencatat pembayaran IPL '.$billing->invoice_number
-                    .($account ? ' (masuk kas '.$account->name.')' : ' (tanpa pencatatan kas)'),
+                'description' => 'Mencatat pembayaran IPL '.$billing->invoice_number.' (masuk kas '.$account->name.')',
                 'new_values' => $billing->fresh()->toArray(),
             ]);
         });
@@ -162,7 +159,9 @@ class Show extends Component
         }
 
         $data = $this->validate([
-            'cash_account_id' => ['nullable', 'exists:cash_accounts,id'],
+            'cash_account_id' => ['required', 'exists:cash_accounts,id'],
+        ], [
+            'cash_account_id.required' => 'Kas tujuan wajib dipilih.',
         ]);
 
         $payment = Payment::with(['billing', 'resident'])->where('billing_id', $this->billing->id)->findOrFail($this->verifyingId);
@@ -174,7 +173,7 @@ class Show extends Component
             return;
         }
 
-        $account = $data['cash_account_id'] ? CashAccount::findOrFail($data['cash_account_id']) : null;
+        $account = CashAccount::findOrFail($data['cash_account_id']);
 
         DB::transaction(function () use ($payment, $account) {
             $payment->update([
@@ -184,18 +183,15 @@ class Show extends Component
                 'rejection_reason' => null,
             ]);
 
-            $cashEntry = null;
-            if ($account) {
-                $cashEntry = CashTransaction::recordForPayment($payment, $account, (int) auth()->id());
+            $cashEntry = CashTransaction::recordForPayment($payment, $account, (int) auth()->id());
 
-                if ($cashEntry) {
-                    ActivityLog::record([
-                        'user_id' => auth()->id(), 'action' => 'create', 'module' => 'cash_transactions',
-                        'subject_type' => CashTransaction::class, 'subject_id' => $cashEntry->id,
-                        'description' => 'Kas masuk otomatis dari pembayaran '.$payment->payment_number.' ke '.$account->name,
-                        'new_values' => $cashEntry->toArray(),
-                    ]);
-                }
+            if ($cashEntry) {
+                ActivityLog::record([
+                    'user_id' => auth()->id(), 'action' => 'create', 'module' => 'cash_transactions',
+                    'subject_type' => CashTransaction::class, 'subject_id' => $cashEntry->id,
+                    'description' => 'Kas masuk otomatis dari pembayaran '.$payment->payment_number.' ke '.$account->name,
+                    'new_values' => $cashEntry->toArray(),
+                ]);
             }
 
             $this->billing->syncPaymentStatus();
@@ -203,8 +199,7 @@ class Show extends Component
             ActivityLog::record([
                 'user_id' => auth()->id(), 'action' => 'approve', 'module' => 'payments',
                 'subject_type' => Payment::class, 'subject_id' => $payment->id,
-                'description' => 'Memverifikasi pembayaran '.$payment->payment_number
-                    .($account ? ' (masuk kas '.$account->name.')' : ' (tanpa pencatatan kas)'),
+                'description' => 'Memverifikasi pembayaran '.$payment->payment_number.' (masuk kas '.$account->name.')',
                 'new_values' => $payment->fresh()->toArray(),
             ]);
         });

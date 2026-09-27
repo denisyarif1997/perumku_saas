@@ -180,7 +180,7 @@
                 <form wire:submit="confirmMarkPaid" class="mt-3 space-y-3">
                     <x-ui.field label="Masuk ke Kas" :error="$errors->first('markPaid_cash_account_id')">
                         <select wire:model="markPaid_cash_account_id" class="min-h-[48px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[15px]">
-                            <option value="">— Tanpa pencatatan kas —</option>
+                            <option value="" disabled selected>— Pilih kas tujuan —</option>
                             @foreach ($cashAccounts as $account)
                                 <option value="{{ $account->id }}">{{ $account->name }} (Saldo @rupiah($account->currentBalance()))</option>
                             @endforeach
@@ -188,12 +188,12 @@
                     </x-ui.field>
 
                     @if ($cashAccounts->isEmpty())
-                        <p class="rounded-xl bg-amber-50 p-3 text-[13px] text-amber-700">Belum ada kas terdaftar. Tagihan tetap bisa ditandai lunas tanpa pencatatan kas.</p>
+                    <p class="rounded-xl bg-amber-50 p-3 text-[13px] text-amber-700">Belum ada kas aktif. Tambahkan kas di menu <a href="{{ route('admin.cash.accounts.index') }}" class="font-semibold underline">Kas Warga</a> sebelum menandai tagihan lunas.</p>
                     @endif
 
                     <div class="grid grid-cols-2 gap-2">
                         <button type="button" wire:click="cancelMarkPaid" class="min-h-[44px] rounded-xl border border-[#E2E8F0] bg-white font-semibold">Batal</button>
-                        <button type="submit" wire:loading.attr="disabled" class="min-h-[44px] rounded-xl border border-[#E2E8F0] bg-white font-semibold">Tandai Lunas</button>
+                    <button type="submit" wire:loading.attr="disabled" @disabled($cashAccounts->isEmpty()) class="min-h-[44px] rounded-xl bg-emerald-600 font-semibold text-white disabled:opacity-60">Tandai Lunas</button>
                     </div>
                 </form>
             </div>

@@ -8,6 +8,7 @@ use App\Livewire\Admin\Residents\Index as ResidentIndex;
 use App\Livewire\Admin\Roles\Index as RoleIndex;
 use App\Livewire\Admin\Users\Index as UserIndex;
 use App\Livewire\Auth\Login;
+use App\Livewire\Resident\Profile as ResidentProfile;
 use App\Models\Billing;
 use App\Models\House;
 use App\Models\HousingBlock;
@@ -40,6 +41,21 @@ class RbacTest extends TestCase
         // Akun platform tidak terikat estate, jadi diambil tanpa global scope
         // agar tetap ditemukan meski test sedang beractingAs sebagai user estate.
         return $this->findUserUnscoped('admin@housinghub.id');
+    }
+
+    /**
+     * Naikkan satu akun warga dari seeder ke role tertentu, lalu muat ulang
+     * relasinya. Dipakai untuk menyimulasikan warga yang sekaligus bertugas
+     * sebagai admin/finance/rt di condominium yang sama.
+     */
+    protected function giveResidentUserRole(string $roleSlug): User
+    {
+        $role = Role::where('slug', $roleSlug)->firstOrFail();
+        $user = User::where('email', 'warga.a.1@housinghub.id')->firstOrFail();
+
+        $user->update(['role_id' => $role->id]);
+
+        return $user->fresh()->load('role.permissions');
     }
 
     public function test_admin_can_open_roles_page(): void
@@ -227,6 +243,62 @@ class RbacTest extends TestCase
         $this->actingAs($resident)->get(route('admin.dashboard'))->assertForbidden();
         $this->actingAs($resident)->get(route('admin.ipl.billings.index'))->assertForbidden();
         $this->actingAs($resident)->get(route('admin.users.index'))->assertForbidden();
+    }
+
+    public function test_resident_profile_offers_admin_button_for_staff_role(): void
+    {
+        $user = $this->giveResidentUserRole('rt');
+
+        Livewire::actingAs($user)
+            ->test(ResidentProfile::class)
+            ->assertSee('Beralih ke Tampilan Admin')
+            ->assertSee(route('admin.dashboard'), false);
+    }
+
+    public function test_resident_profile_hides_admin_button_for_pure_resident(): void
+    {
+        $user = $this->giveResidentUserRole('resident');
+
+        Livewire::actingAs($user)
+            ->test(ResidentProfile::class)
+            ->assertDontSee('Beralih ke Tampilan Admin')
+            ->assertDontSee(route('admin.dashboard'), false);
+    }
+
+    public function test_resident_profile_button_follows_permission_not_role_name(): void
+    {
+        // Role bernama "finance" tapi akses area admin-nya dicabut lewat
+        // halaman Role & Akses: tombol harus ikut hilang, bukan tetap tampil
+        // lalu memunculkan 403.
+        $financeRole = Role::where('slug', 'finance')->firstOrFail();
+        $financeRole->permissions()->detach(
+            Permission::where('slug', 'access-admin')->firstOrFail()->id
+        );
+
+        Livewire::actingAs($this->giveResidentUserRole('finance'))
+            ->test(ResidentProfile::class)
+            ->assertDontSee('Beralih ke Tampilan Admin');
+    }
+
+    public function test_resident_profile_button_skips_dashboard_without_view_dashboard_permission(): void
+    {
+        // Akses admin boleh, tetapi tidak boleh melihat dashboard, sehingga
+        // tombol harus mengarah ke modul yang benar-benar bisa dimuat.
+        $accessAdmin = Permission::where('slug', 'access-admin')->firstOrFail();
+        $manageComplaint = Permission::where('slug', 'manage-complaint')->firstOrFail();
+        $role = Role::create(['name' => 'Petugas Aduan', 'slug' => 'petugas_aduan', 'status' => 'active']);
+        $role->permissions()->sync([$accessAdmin->id, $manageComplaint->id]);
+
+        $user = $this->giveResidentUserRole($role->slug);
+
+        Livewire::actingAs($user)
+            ->test(ResidentProfile::class)
+            ->assertSee('Beralih ke Tampilan Admin')
+            ->assertSee(route('admin.info.complaints'), false)
+            ->assertDontSee(route('admin.dashboard'), false);
+
+        // Targetnya benar-benar bisa dimuat, bukan hanya tautan yang terlihat benar.
+        $this->actingAs($user)->get(route('admin.info.complaints'))->assertOk();
     }
 
     public function test_finance_cannot_open_module_outside_permission(): void

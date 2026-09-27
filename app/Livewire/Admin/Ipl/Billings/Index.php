@@ -100,7 +100,9 @@ class Index extends Component
         }
 
         $data = $this->validate([
-            'markPaid_cash_account_id' => ['nullable', 'exists:cash_accounts,id'],
+            'markPaid_cash_account_id' => ['required', 'exists:cash_accounts,id'],
+        ], [
+            'markPaid_cash_account_id.required' => 'Kas tujuan wajib dipilih.',
         ]);
 
         $billing = Billing::findOrFail($this->markPaidId);
@@ -113,7 +115,7 @@ class Index extends Component
             return;
         }
 
-        $account = $data['markPaid_cash_account_id'] ? CashAccount::findOrFail($data['markPaid_cash_account_id']) : null;
+        $account = CashAccount::findOrFail($data['markPaid_cash_account_id']);
 
         DB::transaction(function () use ($billing, $amount, $account) {
             $payment = Payment::create([
@@ -131,18 +133,15 @@ class Index extends Component
                 'notes' => 'Dicatat manual oleh pengelola.',
             ]);
 
-            $cashEntry = null;
-            if ($account) {
-                $cashEntry = CashTransaction::recordForPayment($payment, $account, (int) auth()->id());
+            $cashEntry = CashTransaction::recordForPayment($payment, $account, (int) auth()->id());
 
-                if ($cashEntry) {
-                    ActivityLog::record([
-                        'user_id' => auth()->id(), 'action' => 'create', 'module' => 'cash_transactions',
-                        'subject_type' => CashTransaction::class, 'subject_id' => $cashEntry->id,
-                        'description' => 'Kas masuk otomatis dari pembayaran '.$payment->payment_number.' ke '.$account->name,
-                        'new_values' => $cashEntry->toArray(),
-                    ]);
-                }
+            if ($cashEntry) {
+                ActivityLog::record([
+                    'user_id' => auth()->id(), 'action' => 'create', 'module' => 'cash_transactions',
+                    'subject_type' => CashTransaction::class, 'subject_id' => $cashEntry->id,
+                    'description' => 'Kas masuk otomatis dari pembayaran '.$payment->payment_number.' ke '.$account->name,
+                    'new_values' => $cashEntry->toArray(),
+                ]);
             }
 
             $billing->syncPaymentStatus();
@@ -150,8 +149,7 @@ class Index extends Component
             ActivityLog::record([
                 'user_id' => auth()->id(), 'action' => 'update', 'module' => 'billings',
                 'subject_type' => Billing::class, 'subject_id' => $billing->id,
-                'description' => 'Menandai lunas tagihan '.$billing->invoice_number
-                    .($account ? ' (masuk kas '.$account->name.')' : ' (tanpa pencatatan kas)'),
+                'description' => 'Menandai lunas tagihan '.$billing->invoice_number.' (masuk kas '.$account->name.')',
                 'new_values' => $billing->fresh()->toArray(),
             ]);
         });

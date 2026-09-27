@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Livewire\Admin\Ipl\Payments\Index;
 use App\Livewire\Resident\Ipl\Show;
 use App\Models\Billing;
+use App\Models\CashAccount;
+use App\Models\CashTransaction;
 use App\Models\House;
 use App\Models\IplRate;
 use App\Models\Payment;
@@ -53,6 +55,17 @@ class IplBillingTest extends TestCase
             'amount' => $amount,
             'period_type' => 'monthly',
             'effective_date' => now()->startOfYear()->toDateString(),
+            'status' => 'active',
+        ]);
+    }
+
+    protected function makeCashAccount(int $estateId, string $name = 'Kas Utama'): CashAccount
+    {
+        return CashAccount::create([
+            'housing_estate_id' => $estateId,
+            'name' => $name,
+            'type' => 'cash',
+            'opening_balance' => 0,
             'status' => 'active',
         ]);
     }
@@ -223,6 +236,7 @@ class IplBillingTest extends TestCase
         app(IplBillingService::class)->generate(now()->year, now()->month, null, 10, $this->admin()->id);
 
         $billing = Billing::firstOrFail();
+        $account = $this->makeCashAccount($billing->housing_estate_id);
 
         $payment = Payment::create([
             'payment_number' => Payment::generateNumber($billing),
@@ -236,10 +250,48 @@ class IplBillingTest extends TestCase
         Livewire::actingAs($this->admin())
             ->test(Index::class)
             ->call('startVerify', $payment->id)
-            ->call('confirmVerify');
+            ->set('cash_account_id', $account->id)
+            ->call('confirmVerify')
+            ->assertHasNoErrors();
 
         $this->assertSame('verified', $payment->fresh()->status);
         $this->assertSame('paid', $billing->fresh()->status);
+
+        // Verifikasi wajib mencatatkan kas masuk ke kas yang dipilih.
+        $this->assertDatabaseHas('cash_transactions', [
+            'cash_account_id' => $account->id,
+            'payment_id' => $payment->id,
+            'type' => CashTransaction::TYPE_IN,
+            'amount' => (float) $billing->total,
+        ]);
+    }
+
+    public function test_admin_verification_is_blocked_without_cash_account(): void
+    {
+        $this->makeRate();
+        app(IplBillingService::class)->generate(now()->year, now()->month, null, 10, $this->admin()->id);
+
+        $billing = Billing::firstOrFail();
+
+        $payment = Payment::create([
+            'payment_number' => Payment::generateNumber($billing),
+            'billing_id' => $billing->id,
+            'amount' => (float) $billing->total,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'transfer',
+            'status' => 'pending',
+        ]);
+
+        Livewire::actingAs($this->admin())
+            ->test(Index::class)
+            ->call('startVerify', $payment->id)
+            ->call('confirmVerify')
+            ->assertHasErrors(['cash_account_id' => 'required']);
+
+        // Tidak ada perubahan status maupun mutasi kas.
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertSame('unpaid', $billing->fresh()->status);
+        $this->assertDatabaseCount('cash_transactions', 0);
     }
 
     public function test_ipl_pages_are_accessible_for_both_roles(): void
