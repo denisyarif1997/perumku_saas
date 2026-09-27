@@ -11,11 +11,11 @@
         <div>
             <h1 class="text-[19px] font-bold leading-tight text-[#0F172A]">Forum Warga</h1>
             <p class="text-[12px] text-[#64748B]">
-                {{ $summary['total'] }} diskusi · {{ $summary['today'] }} hari ini
+                {{ $summary['total'] ?? 0 }} diskusi · {{ $summary['today'] ?? 0 }} hari ini
             </p>
         </div>
         <button type="button" wire:click="openForm"
-            class="flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-xl bg-teal-700 px-3.5 text-[13px] font-semibold text-white">
+            class="flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-xl bg-teal-700 px-3.5 text-[13px] font-semibold text-white hover:bg-teal-800 active:scale-95">
             <i data-lucide="plus" class="h-4 w-4"></i> Diskusi
         </button>
     </div>
@@ -78,16 +78,17 @@
         Memuat...
     </div>
 
-    {{-- List thread ala Kaskus --}}
+    {{-- List thread --}}
     <div class="divide-y divide-[#E2E8F0] rounded-xl border border-[#E2E8F0] bg-white">
         @forelse ($posts as $post)
-            <div class="relative flex gap-3 px-3.5 py-3">
-                <a href="{{ route('resident.forum.show', $post) }}" wire:navigate class="min-w-0 flex-1">
+            <div class="group relative flex items-start justify-between gap-3 px-3.5 py-3 hover:bg-slate-50">
+                {{-- Link detail postingan --}}
+                <a href="{{ route('resident.forum.show', $post) }}" wire:navigate class="block min-w-0 flex-1">
                     <div class="flex items-center gap-1.5 text-[11px] font-semibold text-[#64748B]">
                         @if ($post->is_pinned)
                             <i data-lucide="pin" class="h-3 w-3 text-sky-600"></i>
                         @endif
-                        <span class="{{ $post->categoryColor() === 'default' ? 'text-teal-700' : 'text-'.$post->categoryColor().'-700' }}">
+                        <span class="text-teal-700">
                             {{ $post->categoryLabel() }}
                         </span>
                         @if ($post->is_poll)
@@ -97,7 +98,7 @@
                         @endif
                     </div>
 
-                    <h2 class="mt-0.5 truncate text-[14.5px] font-bold leading-snug text-[#0F172A]">
+                    <h2 class="mt-0.5 truncate text-[14.5px] font-bold leading-snug text-[#0F172A] group-hover:text-teal-700">
                         {{ $post->title }}
                     </h2>
 
@@ -128,14 +129,18 @@
                     @endif
                 </a>
 
-                <div class="flex shrink-0 flex-col items-end justify-between">
+                {{-- Kolom Aksi Kanan --}}
+                <div class="relative z-10 flex shrink-0 flex-col items-end justify-between self-stretch pl-2">
                     <span class="inline-flex items-center gap-1 text-[12px] font-semibold text-[#64748B]">
                         <i data-lucide="message-circle" class="h-3.5 w-3.5"></i>
                         {{ $post->comments_count ?? 0 }}
                     </span>
                     @can('delete', $post)
-                        <button type="button" wire:click="delete({{ $post->id }})" wire:confirm="Hapus postingan ini beserta komentarnya?"
-                            class="mt-1 flex h-7 w-7 items-center justify-center rounded-lg text-red-500" title="Hapus">
+                        <button type="button" 
+                            wire:click.stop="delete({{ $post->id }})" 
+                            wire:confirm="Hapus postingan ini beserta komentarnya?"
+                            class="mt-1 flex h-7 w-7 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 active:scale-95" 
+                            title="Hapus">
                             <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
                         </button>
                     @endcan
@@ -143,21 +148,23 @@
             </div>
         @empty
             <x-ui.empty-state icon="messages-square" title="Belum ada diskusi" subtitle="Jadilah yang pertama membuka diskusi di forum warga.">
-                @if (! $isFiltering)
-                    <button wire:click="openForm" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 font-semibold text-white">
+                <div class="mt-2 flex w-full flex-col gap-2">
+                    <button type="button" wire:click="openForm" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 font-semibold text-white hover:bg-teal-800 active:scale-95">
                         <i data-lucide="plus" class="h-4 w-4"></i> Buat Postingan Pertama
                     </button>
-                @else
-                    <button wire:click="resetFilter" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] px-6 font-semibold">
-                        <i data-lucide="rotate-ccw" class="h-4 w-4"></i> Reset filter
-                    </button>
-                @endif
+                    @if ($isFiltering)
+                        <button type="button" wire:click="resetFilter" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] px-6 font-semibold text-[#64748B] hover:bg-slate-50">
+                            <i data-lucide="rotate-ccw" class="h-4 w-4"></i> Reset filter
+                        </button>
+                    @endif
+                </div>
             </x-ui.empty-state>
         @endforelse
     </div>
 
     <div>{{ $posts->links() }}</div>
 
+<<<<<<< HEAD
     {{-- Modal composer: buat diskusi baru atau polling baru --}}
     @if ($showForm)
         <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
@@ -274,3 +281,10 @@
     @endif
 </div>
 </div>
+=======
+    {{-- Modal form --}}
+    @if ($showForm)
+        {{-- ... isi modal form ... --}}
+    @endif
+</div>
+>>>>>>> c113624db209563202d44ea53b22d66067dbe086
