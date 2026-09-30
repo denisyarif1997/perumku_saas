@@ -127,8 +127,39 @@ html.dark .text-slate-600,
 html.dark .text-slate-700,
 html.dark .text-gray-400,
 html.dark .text-gray-500,
-html.dark .text-gray-600 {
+html.dark .text-gray-600,
+html.dark .text-gray-700 {
     color: #A3A3A3 !important;
+}
+
+/* --- Teks status berwarna (alert, badge, tombol) → versi terang.
+       Warna 600–800 terlalu gelap di atas hitam, jadi dinaikkan satu notch. --- */
+html.dark .text-red-500,
+html.dark .text-red-600,
+html.dark .text-red-700,
+html.dark .text-red-800 {
+    color: #F87171 !important;
+}
+
+html.dark .text-emerald-700,
+html.dark .text-emerald-800 {
+    color: #6EE7B7 !important;
+}
+
+html.dark .text-amber-700,
+html.dark .text-amber-800 {
+    color: #FCD34D !important;
+}
+
+html.dark .text-sky-600,
+html.dark .text-sky-700,
+html.dark .text-sky-800 {
+    color: #7DD3FC !important;
+}
+
+html.dark .text-teal-700,
+html.dark .text-teal-800 {
+    color: #5EEAD4 !important;
 }
 
 /* --- Border → abu gelap halus --- */
@@ -138,6 +169,12 @@ html.dark .border-\[\#e3e3e0\],
 html.dark .border-slate-200,
 html.dark .border-gray-200,
 html.dark .border-gray-300 {
+    border-color: #262626 !important;
+}
+
+/* --- Garis pemisah (divide-*) ikut haul border yang sama --- */
+html.dark .divide-\[\#E2E8F0\] > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-\[\#EEF2F1\] > :not([hidden]) ~ :not([hidden]) {
     border-color: #262626 !important;
 }
 
@@ -170,7 +207,10 @@ html.dark .bg-red-50,
 html.dark .bg-amber-50,
 html.dark .bg-emerald-50,
 html.dark .bg-sky-50,
-html.dark .bg-teal-50 {
+html.dark .bg-teal-50,
+html.dark .bg-purple-50,
+html.dark .bg-purple-100,
+html.dark .bg-pink-50 {
     background-color: rgba(255, 255, 255, 0.06) !important;
 }
 
@@ -178,8 +218,45 @@ html.dark .border-red-200,
 html.dark .border-red-100,
 html.dark .border-amber-200,
 html.dark .border-emerald-200,
-html.dark .border-sky-200 {
+html.dark .border-sky-200,
+html.dark .border-purple-200,
+html.dark .border-purple-300,
+html.dark .border-purple-400,
+html.dark .border-pink-200 {
     border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* --- Teks aksen gelap (ungu & pink) → versi terang agar terbaca di atas
+       permukaan hitam. Chip polling memakai bg-white yang di-remap jadi hitam,
+       jadi teksnya wajib ikut terang. --- */
+html.dark .text-purple-700,
+html.dark .text-purple-800,
+html.dark .text-purple-900 {
+    color: #D8B4FE !important;
+}
+
+html.dark .text-pink-700,
+html.dark .text-pink-800 {
+    color: #F9A8D4 !important;
+}
+
+/* --- Ring tipis (ring-1) dari warna terang ikut disamarkan --- */
+html.dark [class*='ring-slate-'],
+html.dark [class*='ring-red-'],
+html.dark [class*='ring-sky-'],
+html.dark [class*='ring-emerald-'],
+html.dark [class*='ring-amber-'],
+html.dark [class*='ring-purple-'],
+html.dark [class*='ring-pink-'] {
+    --tw-ring-color: rgba(255, 255, 255, 0.12);
+}
+
+/* --- Chip pilihan polling: bg-white di dalam panel polling tidak boleh ikut
+       jadi hitam penuh, kalau tidak chip hilang di dalam panel. Pakai warna
+       permukaan sekunder yang sama dengan input dark mode. --- */
+html.dark .bg-purple-50 .bg-white,
+html.dark .bg-purple-100 .bg-white {
+    background-color: #1A1A1A !important;
 }
 
 /* --- Shadow terang di dark mode disamarkan agar tidak "bercahaya" --- */

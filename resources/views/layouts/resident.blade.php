@@ -91,6 +91,7 @@
             ['resident.cash.index', 'banknote', 'Kas', 'resident.cash.*'],
             ['resident.chess.index', 'crown', 'Catur', 'resident.chess.*'],
             ['resident.forum.index', 'messages-square', 'Forum', 'resident.forum.*'],
+            ['resident.inventory.index', 'package', 'Pinjam', 'resident.inventory.*'],
             ['resident.complaints.index', 'wrench', 'Aduan', 'resident.complaints.*'],
             ['resident.info.index', 'megaphone', 'Info', 'resident.info.*'],
             ['resident.profile', 'user', 'Profil', 'resident.profile'],

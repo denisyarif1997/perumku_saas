@@ -14,6 +14,8 @@ use App\Livewire\Admin\Houses\Index as HouseIndex;
 use App\Livewire\Admin\Info\Announcements as InfoAnnouncements;
 use App\Livewire\Admin\Info\ComplaintDetail as InfoComplaintDetail;
 use App\Livewire\Admin\Info\Complaints as InfoComplaints;
+use App\Livewire\Admin\Inventory\Items as InventoryItems;
+use App\Livewire\Admin\Inventory\Loans as InventoryLoans;
 use App\Livewire\Admin\Ipl\Billings\Index as BillingIndex;
 use App\Livewire\Admin\Ipl\Billings\Show as BillingShow;
 use App\Livewire\Admin\Ipl\Generate as BillingGenerate;
@@ -37,6 +39,7 @@ use App\Livewire\Resident\Dashboard as ResidentDashboard;
 use App\Livewire\Resident\Forum\Index as ResidentForumIndex;
 use App\Livewire\Resident\Forum\Show as ResidentForumShow;
 use App\Livewire\Resident\Info\Index as ResidentInfoIndex;
+use App\Livewire\Resident\Inventory\Index as ResidentInventoryIndex;
 use App\Livewire\Resident\Ipl\Index as ResidentIplIndex;
 use App\Livewire\Resident\Ipl\Show as ResidentIplShow;
 use App\Livewire\Resident\Profile as ResidentProfile;
@@ -76,6 +79,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/chess', ResidentChessIndex::class)->name('chess.index');
         Route::get('/chess/{game}', ResidentChessPlay::class)->name('chess.play');
         Route::get('/cash', ResidentCashIndex::class)->name('cash.index');
+        Route::get('/pinjam', ResidentInventoryIndex::class)->name('inventory.index');
         Route::get('/profile', ResidentProfile::class)->name('profile');
     });
 
@@ -114,6 +118,11 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/announcements', InfoAnnouncements::class)->name('announcements')->middleware('permission:manage-announcement');
             Route::get('/complaints', InfoComplaints::class)->name('complaints')->middleware('permission:manage-complaint');
             Route::get('/complaints/{complaint}', InfoComplaintDetail::class)->name('complaints.show')->middleware('permission:manage-complaint');
+        });
+
+        Route::prefix('inventory')->name('inventory.')->group(function () {
+            Route::get('/items', InventoryItems::class)->name('items.index')->middleware('permission:manage-inventory');
+            Route::get('/loans', InventoryLoans::class)->name('loans.index')->middleware('permission:manage-inventory');
         });
 
         Route::get('/forum', AdminForumIndex::class)->name('forum.index')->middleware('permission:manage-forum');

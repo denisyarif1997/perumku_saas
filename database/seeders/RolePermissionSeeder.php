@@ -36,6 +36,7 @@ class RolePermissionSeeder extends Seeder
             'marketplace' => ['manage-marketplace'],
             'security' => ['manage-visitor', 'manage-vehicle', 'manage-package', 'manage-emergency'],
             'finance' => ['manage-finance'],
+            'inventory' => ['manage-inventory'],
             'system' => ['manage-user', 'manage-role', 'view-activity-log'],
         ];
 
@@ -52,6 +53,7 @@ class RolePermissionSeeder extends Seeder
             'manage-visitor' => 'Kelola Tamu', 'manage-vehicle' => 'Kelola Kendaraan',
             'manage-package' => 'Kelola Paket', 'manage-emergency' => 'Kelola Emergency',
             'manage-finance' => 'Kelola Keuangan',
+            'manage-inventory' => 'Kelola Inventaris',
             'manage-user' => 'Kelola User', 'manage-role' => 'Kelola Role', 'view-activity-log' => 'Lihat Activity Log',
         ];
 
@@ -85,6 +87,8 @@ class RolePermissionSeeder extends Seeder
             'menu-announcements' => ['manage-announcement'],
             'menu-complaints' => ['manage-complaint'],
             'menu-forum' => ['manage-forum'],
+            'menu-inventory-items' => ['manage-inventory'],
+            'menu-inventory-loans' => ['manage-inventory'],
             'menu-users' => ['manage-user'],
             'menu-roles' => ['manage-role'],
             'menu-activity-logs' => ['view-activity-log'],
@@ -107,6 +111,8 @@ class RolePermissionSeeder extends Seeder
             'menu-announcements' => 'Menu: Pengumuman',
             'menu-complaints' => 'Menu: Laporan Warga',
             'menu-forum' => 'Menu: Forum',
+            'menu-inventory-items' => 'Menu: Daftar Barang',
+            'menu-inventory-loans' => 'Menu: Pinjam Barang',
             'menu-users' => 'Menu: User',
             'menu-roles' => 'Menu: Role & Akses',
             'menu-activity-logs' => 'Menu: Log Aktivitas',
@@ -124,10 +130,10 @@ class RolePermissionSeeder extends Seeder
             'super_admin' => array_keys($permIds),
             'admin' => array_keys($permIds),
             'finance' => ['view-dashboard', 'access-admin', 'manage-billing', 'manage-payment', 'verify-payment', 'manage-finance'],
-            'rt' => ['view-dashboard', 'access-admin', 'manage-residents', 'manage-houses', 'manage-announcement', 'manage-event', 'manage-administration'],
-            'rw' => ['view-dashboard', 'access-admin', 'manage-residents', 'manage-announcement', 'manage-event'],
+            'rt' => ['view-dashboard', 'access-admin', 'manage-residents', 'manage-houses', 'manage-announcement', 'manage-event', 'manage-administration', 'manage-inventory'],
+            'rw' => ['view-dashboard', 'access-admin', 'manage-residents', 'manage-announcement', 'manage-event', 'manage-inventory'],
             'security' => ['view-dashboard', 'access-admin', 'manage-visitor', 'manage-vehicle', 'manage-package', 'manage-emergency'],
-            'maintenance' => ['view-dashboard', 'access-admin', 'manage-complaint', 'manage-facility', 'manage-booking'],
+            'maintenance' => ['view-dashboard', 'access-admin', 'manage-complaint', 'manage-facility', 'manage-booking', 'manage-inventory'],
             'resident' => ['view-dashboard'],
         ];
 

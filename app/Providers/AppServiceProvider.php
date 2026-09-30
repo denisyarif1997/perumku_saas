@@ -7,6 +7,8 @@ use App\Models\Billing;
 use App\Models\Complaint;
 use App\Models\House;
 use App\Models\HousingEstate;
+use App\Models\InventoryItem;
+use App\Models\ItemLoan;
 use App\Models\Payment;
 use App\Models\Post;
 use App\Models\PostComment;
@@ -18,6 +20,8 @@ use App\Policies\BillingPolicy;
 use App\Policies\ComplaintPolicy;
 use App\Policies\HousePolicy;
 use App\Policies\HousingEstatePolicy;
+use App\Policies\InventoryItemPolicy;
+use App\Policies\ItemLoanPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PostCommentPolicy;
 use App\Policies\PostPolicy;
@@ -48,6 +52,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Complaint::class, ComplaintPolicy::class);
         Gate::policy(Post::class, PostPolicy::class);
         Gate::policy(PostComment::class, PostCommentPolicy::class);
+        Gate::policy(InventoryItem::class, InventoryItemPolicy::class);
+        Gate::policy(ItemLoan::class, ItemLoanPolicy::class);
 
         Gate::before(function ($user, $ability) {
             if ($user instanceof User && $user->hasRole('super_admin')) {

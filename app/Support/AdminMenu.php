@@ -47,6 +47,10 @@ class AdminMenu
                 ['admin.info.complaints', 'message-square-warning', 'Laporan Warga', 'admin.info.complaints*', ['menu-complaints'], ['manage-complaint']],
                 ['admin.forum.index', 'messages-square', 'Forum Warga', 'admin.forum.*', ['menu-forum'], ['manage-forum']],
             ]],
+            ['label' => 'Inventaris', 'items' => [
+                ['admin.inventory.items.index', 'package', 'Daftar Barang', 'admin.inventory.items.*', ['menu-inventory-items'], ['manage-inventory']],
+                ['admin.inventory.loans.index', 'repeat', 'Pinjam Barang', 'admin.inventory.loans.*', ['menu-inventory-loans'], ['manage-inventory']],
+            ]],
             ['label' => 'Sistem', 'items' => [
                 ['admin.users.index', 'user-cog', 'User', 'admin.users.*', ['menu-users'], ['manage-user']],
                 ['admin.roles.index', 'shield-check', 'Role & Akses', 'admin.roles.*', ['menu-roles'], ['manage-role']],
