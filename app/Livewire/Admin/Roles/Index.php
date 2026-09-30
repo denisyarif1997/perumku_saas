@@ -26,6 +26,7 @@ class Index extends Component
         'marketplace' => 'Marketplace',
         'security' => 'Keamanan',
         'finance' => 'Keuangan',
+        'inventory' => 'Inventaris',
         'system' => 'Sistem',
         'menu' => 'Akses Menu (per halaman)',
     ];
