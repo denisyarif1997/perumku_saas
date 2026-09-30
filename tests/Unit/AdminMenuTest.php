@@ -105,4 +105,35 @@ class AdminMenuTest extends TestCase
         $this->assertContains('admin.inventory.items.index', $routes);
         $this->assertContains('admin.inventory.loans.index', $routes);
     }
+
+    public function test_sync_permissions_command_registers_inventory_permissions(): void
+    {
+        // Simulasikan kondisi setelah deploy: permission modul baru belum
+        // pernah di-seed, sehingga halaman Role & Akses tidak menampilkannya.
+        Permission::whereIn('slug', [
+            'manage-inventory',
+            'menu-inventory-items',
+            'menu-inventory-loans',
+        ])->delete();
+
+        $this->assertFalse(Permission::where('slug', 'manage-inventory')->exists());
+
+        $this->artisan('app:sync-permissions')->assertSuccessful();
+
+        // Setelah perintah dijalankan, permission harus terdaftar lagi.
+        $this->assertTrue(Permission::where('slug', 'manage-inventory')->exists());
+        $this->assertTrue(Permission::where('slug', 'menu-inventory-items')->exists());
+        $this->assertTrue(Permission::where('slug', 'menu-inventory-loans')->exists());
+    }
+
+    public function test_sync_permissions_command_is_idempotent_and_keeps_existing_users(): void
+    {
+        $userCountBefore = User::count();
+
+        $this->artisan('app:sync-permissions')->assertSuccessful();
+        $this->artisan('app:sync-permissions')->assertSuccessful();
+
+        $this->assertSame($userCountBefore, User::count());
+        $this->assertSame(1, Permission::where('slug', 'manage-inventory')->count());
+    }
 }

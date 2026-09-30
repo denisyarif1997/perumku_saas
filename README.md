@@ -125,6 +125,23 @@ php artisan db:seed
 Urutan seeder: `RolePermissionSeeder`, `HousingSeeder`, `IplSeeder`, lalu
 `AnnouncementSeeder`.
 
+**Saat update ke versi baru (deploy):**
+
+```bash
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan app:sync-permissions   # wajib setelah migrate
+php artisan optimize:clear
+npm ci && npm run build
+```
+
+> **Penting:** permission (termasuk permission menu per halaman) dibuat lewat
+> seeder, **bukan** lewat migration. Menjalankan `migrate` saja tidak cukup —
+> menu baru tidak akan muncul di **Sistem → Role & Akses** sampai
+> `app:sync-permissions` dijalankan. Perintah ini idempoten, jadi aman
+> dipanggil berulang dan tidak menghapus data yang sudah ada.
+
 **4. Jalankan:**
 
 ```bash
