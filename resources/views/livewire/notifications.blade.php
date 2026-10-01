@@ -165,6 +165,18 @@
                                     'tone' => 'bg-emerald-50 text-emerald-700',
                                 ],
 
+                                \App\Notifications\NewItemLoan::class => [
+                                    'icon' => 'package',
+                                    'label' => 'Pengajuan Pinjam',
+                                    'tone' => 'bg-violet-50 text-violet-700',
+                                ],
+
+                                \App\Notifications\LoanStatusChanged::class => [
+                                    'icon' => 'package-check',
+                                    'label' => 'Status Pinjaman',
+                                    'tone' => 'bg-emerald-50 text-emerald-700',
+                                ],
+
                                 \App\Notifications\NewAnnouncement::class => [
                                     'icon' => 'megaphone',
                                     'label' => 'Pengumuman',
@@ -306,8 +318,8 @@
                             </p>
 
                             <p class="text-[12px] text-[#64748B]">
-                                Update forum, laporan &amp; pengumuman akan
-                                muncul di sini.
+                                Update forum, laporan, pinjaman &amp; pengumuman
+                                akan muncul di sini.
                             </p>
 
                         </div>

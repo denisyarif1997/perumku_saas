@@ -800,6 +800,147 @@ class TenantIsolationTest extends TestCase
         $this->assertStringNotContainsString($houseB->house_number, $html);
     }
 
+    public function test_resident_of_one_estate_cannot_query_residents_of_another(): void
+    {
+        $this->makeEstateB();
+        $wargaB = $this->findUserUnscoped('warga.b@housinghub.test');
+
+        $this->actingAs($this->residentA());
+
+        // Model Resident memakai scope lewat hunian, jadi query mentah pun
+        // tidak boleh menemukan warga dari perumahan lain.
+        $this->assertNull(Resident::find($wargaB->resident_id));
+        $this->assertNull(Resident::where('name', 'Warga Estate B')->first());
+
+        // Global scope User juga menutup akun warga lain.
+        $this->assertNull(User::find($wargaB->id));
+        $this->assertSame(
+            0,
+            User::whereNotNull('resident_id')->where('id', $wargaB->id)->count(),
+        );
+    }
+
+    public function test_resident_cannot_open_another_estates_resident_pages(): void
+    {
+        [$estateB, $houseB, $residentB, $wargaB] = $this->makeEstateB();
+
+        // housing_estate_id diisi eksplisit karena baris dibuat tanpa sesi
+        // login. Kalau dibiarkan NULL, scope akan memperlakukannya sebagai
+        // "data global" yang memang terlihat lintas condominan.
+        $complaintB = Complaint::create([
+            'housing_estate_id' => $estateB->id,
+            'resident_id' => $residentB->id,
+            'user_id' => $wargaB->id,
+            'house_id' => $houseB->id,
+            'category' => 'facility',
+            'title' => 'Lampu mati di estate B',
+            'description' => 'Laporan menit komplain estate B',
+            'priority' => 'medium',
+            'status' => 'open',
+        ]);
+
+        $postB = Post::create([
+            'housing_estate_id' => $estateB->id,
+            'resident_id' => $residentB->id,
+            'user_id' => $wargaB->id,
+            'title' => 'Postingan rahasia estate B',
+            'body' => 'Isi rahasia dari perumahan lain',
+            'category' => 'umum',
+        ]);
+
+        $wargaA = $this->residentA();
+
+        // Halaman milik warga lain harus memblokir akses. Global scope membuat
+        // route binding tidak menemukan record, jadi jawabannya 404 — bukan
+        // 200 dengan data orang lain. Yang diuji di sini adalah sifat "tidak
+        // boleh bisa diakses", bukan kode status spesifik.
+        foreach ([route('resident.complaints.show', $complaintB->id), route('resident.forum.show', $postB->id)] as $url) {
+            $response = $this->actingAs($wargaA)->get($url);
+
+            $this->assertContains(
+                $response->getStatusCode(),
+                [403, 404],
+                "Warga A seharusnya tidak bisa membuka {$url}, tapi dapat {$response->getStatusCode()}.",
+            );
+        }
+
+        // Isi rahasianya tidak boleh bocor di halaman respons mana pun.
+        foreach (['resident.complaints.index', 'resident.forum.index'] as $route) {
+            $this->actingAs($wargaA)
+                ->get(route($route))
+                ->assertOk()
+                ->assertDontSee('Lampu mati di estate B')
+                ->assertDontSee('Postingan rahasia estate B');
+        }
+
+        // Halaman daftar milik warga A sendiri tetap normal.
+        $this->actingAs($wargaA)->get(route('resident.complaints.index'))->assertOk();
+        $this->actingAs($wargaA)->get(route('resident.forum.index'))->assertOk();
+    }
+
+    public function test_resident_sees_only_own_estate_in_shared_pages(): void
+    {
+        $this->makeEstateB();
+
+        $this->actingAs($this->residentA());
+
+        // Halaman bersama (dashboard, profil, kas) tidak boleh memuat nama
+        // maupun nomor telepon warga dari perumahan lain.
+        foreach (['resident.dashboard', 'resident.profile', 'resident.cash.index'] as $route) {
+            $html = $this->actingAs($this->residentA())
+                ->get(route($route))
+                ->assertOk()
+                ->getContent();
+
+            $this->assertStringNotContainsString(
+                'Warga Estate B',
+                $html,
+                "Halaman {$route} membocorkan nama warga dari perumahan lain.",
+            );
+            $this->assertStringNotContainsString(
+                'warga.b@housinghub.test',
+                $html,
+                "Halaman {$route} membocorkan email warga dari perumahan lain.",
+            );
+        }
+    }
+
+    public function test_resident_cannot_read_another_estates_billings(): void
+    {
+        [$estateB, $houseB, $residentB, $wargaB] = $this->makeEstateB();
+
+        $billingB = Billing::create([
+            'invoice_number' => 'IPL-B-RAHASIA-0001',
+            'house_id' => $houseB->id,
+            'resident_id' => $residentB->id,
+            'billing_type' => 'ipl',
+            'period_month' => 3,
+            'period_year' => 2026,
+            'amount' => 175000,
+            'total' => 175000,
+            'due_date' => now()->addMonth()->toDateString(),
+            'status' => 'unpaid',
+        ]);
+
+        $this->actingAs($this->residentA());
+
+        // Tagihan estate lain tidak boleh masuk daftar tagihan warga A,
+        // dan halaman detailnya tidak boleh terbuka.
+        $this->actingAs($this->residentA())
+            ->get(route('resident.ipl.index'))
+            ->assertOk()
+            ->assertDontSee('IPL-B-RAHASIA-0001');
+
+        $response = $this->actingAs($this->residentA())
+            ->get(route('resident.ipl.show', $billingB->id));
+
+        $this->assertContains(
+            $response->getStatusCode(),
+            [403, 404],
+            'Warga A seharusnya tidak bisa membuka tagihan estate lain.',
+        );
+    }
+
     public function test_guest_can_open_the_public_info_page(): void
     {
         $this->get(route('info'))

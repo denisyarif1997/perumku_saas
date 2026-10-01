@@ -3,10 +3,12 @@
 namespace App\Livewire;
 
 use App\Notifications\ComplaintUpdated;
+use App\Notifications\LoanStatusChanged;
 use App\Notifications\NewAnnouncement;
 use App\Notifications\NewCommentOnPost;
 use App\Notifications\NewComplaint;
 use App\Notifications\NewForumPost;
+use App\Notifications\NewItemLoan;
 use Illuminate\Notifications\DatabaseNotification;
 use Livewire\Component;
 
@@ -24,6 +26,7 @@ class Notifications extends Component
     public const CATEGORIES = [
         'forum' => 'Forum',
         'laporan' => 'Laporan',
+        'pinjaman' => 'Pinjaman',
         'pengumuman' => 'Pengumuman',
     ];
 
@@ -37,6 +40,8 @@ class Notifications extends Component
         NewCommentOnPost::class => 'forum',
         NewComplaint::class => 'laporan',
         ComplaintUpdated::class => 'laporan',
+        NewItemLoan::class => 'pinjaman',
+        LoanStatusChanged::class => 'pinjaman',
         NewAnnouncement::class => 'pengumuman',
     ];
 
@@ -139,6 +144,10 @@ class Notifications extends Component
             NewComplaint::class, ComplaintUpdated::class => auth()->user()->hasPermission('manage-complaint')
                 ? route('admin.info.complaints.show', $data['complaint_id'])
                 : route('resident.complaints.show', $data['complaint_id']),
+            // Pengajuan baru → antrean pengelola; perubahan status → halaman
+            // warga yang melihat riwayat pinjamannya.
+            NewItemLoan::class => route('admin.inventory.loans.index'),
+            LoanStatusChanged::class => route('resident.inventory.index'),
             NewAnnouncement::class => auth()->user()->hasPermission('manage-announcement')
                 ? route('admin.info.announcements')
                 : route('resident.info.index'),
@@ -150,8 +159,10 @@ class Notifications extends Component
     {
         $user = auth()->user();
 
-        // Hitung unread per kategori untuk badge pada tab filter.
-        $unreadPerCategory = ['forum' => 0, 'laporan' => 0, 'pengumuman' => 0, 'lainnya' => 0];
+        // Hitung unread per kategori untuk badge pada tab filter. Kuncianya
+        // diturunkan dari CATEGORIES supaya tab baru ikut terhitung tanpa
+        // harus mengubah daftar di sini.
+        $unreadPerCategory = array_fill_keys([...array_keys(self::CATEGORIES), 'lainnya'], 0);
         foreach ($user->unreadNotifications()->limit(300)->get() as $unread) {
             $unreadPerCategory[$this->categoryOf($unread->type)]++;
         }

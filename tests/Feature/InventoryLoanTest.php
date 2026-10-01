@@ -4,12 +4,15 @@ namespace Tests\Feature;
 
 use App\Livewire\Admin\Inventory\Items as AdminItems;
 use App\Livewire\Admin\Inventory\Loans as AdminLoans;
+use App\Livewire\Notifications as NotificationsBell;
 use App\Livewire\Resident\Inventory\Index as ResidentInventory;
 use App\Models\HousingEstate;
 use App\Models\InventoryItem;
 use App\Models\ItemLoan;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\LoanStatusChanged;
+use App\Notifications\NewItemLoan;
 use Database\Seeders\HousingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -324,6 +327,75 @@ class InventoryLoanTest extends TestCase
         Livewire::actingAs($staff)
             ->test(AdminLoans::class)
             ->assertForbidden();
+    }
+
+    public function test_new_loan_request_notifies_the_inventory_manager(): void
+    {
+        $manager = $this->inventoryManager();
+        $item = $this->makeItem(['name' => 'Kursi Pesta', 'quantity' => 2]);
+
+        Livewire::actingAs($this->resident())
+            ->test(ResidentInventory::class)
+            ->call('requestLoan', $item->id)
+            ->set('purpose', 'Untuk arisan warga')
+            ->call('submit');
+
+        // Notifikasi harus sampai ke pengelola inventaris, bukan ke pemohon.
+        $this->assertSame(1, $manager->notifications()->count());
+        $this->assertSame(0, $this->resident()->notifications()->count());
+
+        $loan = $this->withoutEstateScope(ItemLoan::firstWhere('inventory_item_id', $item->id));
+
+        $notification = $manager->notifications()->firstOrFail();
+        $this->assertSame(NewItemLoan::class, $notification->type);
+        // Judul & ringkasan ikut diisi supaya tidak tampil sebagai "-".
+        $this->assertSame('Pinjam Kursi Pesta', $notification->data['title']);
+        $this->assertSame('Untuk arisan warga', $notification->data['excerpt']);
+        $this->assertSame($loan->referenceNumber(), $notification->data['ticket_number']);
+    }
+
+    public function test_loan_notifications_open_the_right_page_per_recipient(): void
+    {
+        $manager = $this->inventoryManager();
+        $resident = $this->resident();
+        $loan = $this->makeLoan($resident, $this->makeItem());
+
+        $manager->notify(new NewItemLoan($loan, $resident->name));
+        $resident->notify(new LoanStatusChanged($loan, 'Pengajuan pinjam disetujui.'));
+
+        // Pengajuan baru → antrean pengelola; perubahan status → riwayat warga.
+        Livewire::actingAs($manager)
+            ->test(NotificationsBell::class)
+            ->call('openItem', $manager->notifications()->firstOrFail()->id)
+            ->assertRedirect(route('admin.inventory.loans.index'));
+
+        Livewire::actingAs($resident)
+            ->test(NotificationsBell::class)
+            ->call('openItem', $resident->notifications()->firstOrFail()->id)
+            ->assertRedirect(route('resident.inventory.index'));
+    }
+
+    public function test_loan_notifications_are_grouped_under_the_pinjaman_tab(): void
+    {
+        $manager = $this->inventoryManager();
+        $resident = $this->resident();
+        $loan = $this->makeLoan($resident, $this->makeItem());
+
+        $manager->notify(new NewItemLoan($loan, $resident->name));
+        $resident->notify(new LoanStatusChanged($loan, 'Barang diserahkan ke peminjam.'));
+
+        // Tab "Pinjaman" ada dan menghitung keduanya, bukan kategori "lainnya".
+        Livewire::actingAs($manager)
+            ->test(NotificationsBell::class)
+            ->call('toggle')
+            ->assertSee('Pengajuan Pinjam')
+            ->assertSee('Pinjaman');
+
+        Livewire::actingAs($resident)
+            ->test(NotificationsBell::class)
+            ->call('setFilter', 'pinjaman')
+            ->call('toggle')
+            ->assertSee('Status Pinjaman');
     }
 
     public function test_items_and_loans_are_isolated_between_estates(): void

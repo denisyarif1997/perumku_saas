@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\ItemLoan;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 /**
  * Notifikasi in-app: ada pengajuan pinjam barang baru dari warga
@@ -31,6 +32,9 @@ class NewItemLoan extends Notification
     {
         return [
             'loan_id' => $this->loan->id,
+            'ticket_number' => $this->loan->referenceNumber(),
+            'title' => 'Pinjam '.$this->loan->item?->name,
+            'excerpt' => Str::limit($this->loan->purpose, 140),
             'item_name' => $this->loan->item?->name,
             'borrower' => $this->loan->borrowerName(),
             'purpose' => $this->loan->purpose,
