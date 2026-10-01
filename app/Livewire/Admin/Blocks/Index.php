@@ -80,5 +80,7 @@ class Index extends Component
                 ->latest()->paginate(10),
             'estates' => HousingEstate::orderBy('name')->get(),
         ]);
+        
     }
+    
 }

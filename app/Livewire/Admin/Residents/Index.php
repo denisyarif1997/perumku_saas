@@ -45,7 +45,7 @@ class Index extends Component
     {
         $this->authorize('viewAny', Resident::class);
 
-        $residents = Resident::with(['houseResidents.house.block'])
+        $residents = Resident::with(['houseResidents.house.block', 'houseResidents.house.estate'])
             ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%")
                 ->orWhere('nik', 'like', "%{$this->search}%")
                 ->orWhere('phone', 'like', "%{$this->search}%"))
@@ -55,7 +55,7 @@ class Index extends Component
         return response()->streamDownload(function () use ($residents) {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, ['Nama', 'NIK', 'Jenis Kelamin', 'Telepon', 'Email', 'Rumah', 'Status']);
+            fputcsv($handle, ['Nama', 'NIK', 'Jenis Kelamin', 'Telepon', 'Email', 'Perumahan', 'Rumah', 'Status']);
 
             foreach ($residents as $resident) {
                 fputcsv($handle, [
@@ -64,6 +64,7 @@ class Index extends Component
                     $resident->gender ? ucfirst($resident->gender) : '',
                     $resident->phone ?? '',
                     $resident->email ?? '',
+                    $resident->estateName() ?? '',
                     $resident->houseResidents->first()?->house?->fullLabel() ?? '-',
                     $resident->status ?? '',
                 ]);
@@ -79,7 +80,7 @@ class Index extends Component
     #[Layout('layouts.admin', ['title' => 'Warga'])]
     public function render()
     {
-        $residents = Resident::with(['houseResidents.house.block', 'user'])
+        $residents = Resident::with(['houseResidents.house.block', 'houseResidents.house.estate', 'user'])
             ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%")->orWhere('nik', 'like', "%{$this->search}%")->orWhere('phone', 'like', "%{$this->search}%"))
             ->latest()
             ->paginate(10);

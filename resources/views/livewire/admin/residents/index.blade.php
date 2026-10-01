@@ -26,6 +26,7 @@
                     <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold">{{ strtoupper(substr($resident->name, 0, 1)) }}</div>
                     <div class="min-w-0 flex-1">
                         <p class="truncate font-semibold">{{ $resident->name }}</p>
+                        <p class="truncate text-[13px] text-[#64748B]">{{ $resident->estateName() ?? $resident->phone ?? '-' }}</p>
                         <p class="truncate text-[13px] text-[#64748B]">{{ $resident->houseResidents->first()?->house?->fullLabel() ? 'Rumah ' . $resident->houseResidents->first()->house->fullLabel() : $resident->phone ?? '-' }}</p>
                     </div>
                 </div>
@@ -41,7 +42,7 @@
 
     <div class="hidden overflow-hidden rounded-2xl border bg-white md:block">
         <table class="w-full text-left text-[14px]">
-            <thead class="bg-slate-50 text-[#64748B]"><tr><th class="px-4 py-3">Nama</th><th class="px-4 py-3">NIK</th><th class="px-4 py-3">Rumah</th>
+            <thead class="bg-slate-50 text-[#64748B]"><tr><th class="px-4 py-3">Nama</th><th class="px-4 py-3">NIK</th><th class="px-4 py-3">Perumahan</th><th class="px-4 py-3">Rumah</th>
             <th class="px-4 py-3">Email</th>
             <th class="px-4 py-3">No Hp</th>
             <th class="px-4 py-3">Gender</th>
@@ -52,6 +53,7 @@
                     <tr class="border-t">
                         <td class="px-4 py-3 font-semibold">{{ $resident->name }}</td>
                         <td class="px-4 py-3">{{ $resident->nik ?? '-' }}</td>
+                        <td class="px-4 py-3 text-[#64748B]">{{ $resident->estateName() ?? '-' }}</td>
                         <td class="px-4 py-3">{{ $resident->houseResidents->first()?->house?->fullLabel() ?? '-' }}</td>
                         <td class="px-4 py-3">{{ $resident->email ?? '-' }}</td>
                         <td class="px-4 py-3">{{ $resident->phone ?? '-' }}</td>
@@ -61,7 +63,7 @@
                         <td class="px-4 py-3 text-right"><a href="{{ route('admin.residents.edit', $resident) }}" wire:navigate class="font-semibold">Ubah</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-[#64748B]">Belum ada data.</td></tr>
+                    <tr><td colspan="8" class="px-4 py-8 text-center text-[#64748B]">Belum ada data.</td></tr>
                 @endforelse
             </tbody>
         </table>

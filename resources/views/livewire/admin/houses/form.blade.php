@@ -8,7 +8,7 @@
             <select wire:model.live="housing_block_id" class="min-h-[48px] w-full rounded-2xl border border-[#E2E8F0] px-4">
                 <option value="">Pilih blok</option>
                 @foreach ($blocks as $block)
-                    <option value="{{ $block->id }}">Blok {{ $block->code }} — {{ $block->name }}</option>
+                    <option value="{{ $block->id }}"> {{ $block->name }}</option>
                 @endforeach
             </select>
         </x-ui.field>

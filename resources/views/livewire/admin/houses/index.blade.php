@@ -47,6 +47,7 @@
                     </div>
                     <x-ui.badge color="{{ $house->status === 'active' ? 'green' : 'slate' }}">{{ $house->status === 'active' ? '● Aktif' : '○ Nonaktif' }}</x-ui.badge>
                 </div>
+                <p class="mt-2 text-[14px] text-[#64748B]">Perumahan: <span class="font-medium text-[#0F172A]">{{ $house->estate?->name ?? '-' }}</span></p>
                 <p class="mt-2 text-[14px] text-[#64748B]">Penghuni: <span class="font-medium text-[#0F172A]">{{ $house->houseResidents->first()?->resident?->name ?? '-' }}</span></p>
                 <div class="mt-3 grid grid-cols-2 gap-2">
                     <a href="{{ route('admin.houses.edit', $house) }}" wire:navigate class="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] text-[14px] font-semibold"><i data-lucide="pencil" class="h-4 w-4"></i> Ubah</a>
@@ -66,13 +67,14 @@
     <div class="hidden overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white md:block">
         <table class="w-full text-left text-[14px]">
             <thead class="bg-slate-50 text-[13px] text-[#64748B]">
-                <tr><th class="px-4 py-3">Rumah</th><th class="px-4 py-3">Alamat</th><th class="px-4 py-3">Penghuni</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Aksi</th></tr>
+                <tr><th class="px-4 py-3">Rumah</th><th class="px-4 py-3">Alamat</th><th class="px-4 py-3">Perumahan</th><th class="px-4 py-3">Penghuni</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Aksi</th></tr>
             </thead>
             <tbody>
                 @forelse ($houses as $house)
                     <tr class="border-t border-[#E2E8F0]">
                         <td class="px-4 py-3 font-semibold">{{ $house->fullLabel() }}</td>
                         <td class="px-4 py-3 text-[#64748B]">{{ $house->address ?? '-' }}</td>
+                        <td class="px-4 py-3 text-[#64748B]">{{ $house->estate?->name ?? '-' }}</td>
                         <td class="px-4 py-3">{{ $house->houseResidents->first()?->resident?->name ?? '-' }}</td>
                         <td class="px-4 py-3"><x-ui.badge color="{{ $house->status === 'active' ? 'green' : 'slate' }}">{{ $house->status }}</x-ui.badge></td>
                         <td class="px-4 py-3 text-right">
@@ -85,7 +87,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-4 py-8 text-center text-[#64748B]">Belum ada data.</td></tr>
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-[#64748B]">Belum ada data.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -64,4 +64,16 @@ class Resident extends Model
 
         return $pivot?->house;
     }
+
+    /**
+     * Nama perumahan tempat warga tinggal.
+     *
+     * Diambil dari hunian pertama yang sudah dimuat, sehingga pemanggil
+     * wajib eager-load `houseResidents.house.estate` (lihat halaman
+     * daftar warga) supaya tidak terjadi query per baris.
+     */
+    public function estateName(): ?string
+    {
+        return $this->houseResidents->first()?->house?->estate?->name;
+    }
 }

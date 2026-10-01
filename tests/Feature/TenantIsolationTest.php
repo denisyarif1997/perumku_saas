@@ -740,6 +740,66 @@ class TenantIsolationTest extends TestCase
         }
     }
 
+    public function test_resident_list_shows_the_estate_of_each_resident(): void
+    {
+        $estateA = $this->estateA();
+        $adminA = $this->estateAdminA();
+
+        $content = strip_tags($this->actingAs($adminA)->get(route('admin.residents.index'))
+            ->assertOk()
+            ->getContent());
+
+        // Nama perumahan tempat warga tinggal ikut tampil untuk admin estate.
+        $this->assertStringContainsString(
+            $estateA->name,
+            $content,
+            'Daftar warga tidak menampilkan nama perumahan asal warga.',
+        );
+    }
+
+    public function test_resident_list_does_not_leak_another_estate(): void
+    {
+        [$estateB, , $residentB] = $this->makeEstateB();
+        $adminA = $this->estateAdminA();
+
+        $html = $this->actingAs($adminA)->get(route('admin.residents.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString($estateB->name, $html);
+        $this->assertStringNotContainsString($residentB->name, $html);
+    }
+
+    public function test_house_list_shows_the_estate_of_each_house(): void
+    {
+        $estateA = $this->estateA();
+        $adminA = $this->estateAdminA();
+
+        $content = strip_tags($this->actingAs($adminA)->get(route('admin.houses.index'))
+            ->assertOk()
+            ->getContent());
+
+        // Nama perumahan asal rumah ikut tampil untuk admin estate.
+        $this->assertStringContainsString(
+            $estateA->name,
+            $content,
+            'Daftar rumah tidak menampilkan nama perumahan asal rumah.',
+        );
+    }
+
+    public function test_house_list_does_not_leak_another_estate(): void
+    {
+        [$estateB, $houseB] = $this->makeEstateB();
+        $adminA = $this->estateAdminA();
+
+        $html = $this->actingAs($adminA)->get(route('admin.houses.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString($estateB->name, $html);
+        $this->assertStringNotContainsString($houseB->house_number, $html);
+    }
+
     public function test_guest_can_open_the_public_info_page(): void
     {
         $this->get(route('info'))
