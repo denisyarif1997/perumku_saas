@@ -138,9 +138,9 @@ class Index extends Component
         abort_unless(auth()->user()->hasPermission('manage-finance'), 403);
         $transaction = CashTransaction::findOrFail($id);
 
-        // Transaksi dari pembayaran IPL hanya boleh dibalikkan lewat modul pembayaran/tagihan.
+        // Transaksi dari pembayaran iuran hanya boleh dibalihkan lewat modul pembayaran/tagihan.
         if ($transaction->payment_id) {
-            session()->flash('error', 'Transaksi ini terhubung ke pembayaran IPL. Pembalikannya otomatis tercatat saat tagihan dibatalkan atau pembayaran dihapus/ditolak.');
+            session()->flash('error', 'Transaksi ini terhubung ke pembayaran iuran. Pembalikannya otomatis tercatat saat tagihan dibatalkan atau pembayaran dihapus/ditolak.');
 
             return;
         }

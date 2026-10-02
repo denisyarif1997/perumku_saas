@@ -252,7 +252,7 @@ class Index extends Component
             ->when($this->statusFilter, fn (Builder $q) => $q->where('status', $this->statusFilter));
     }
 
-    #[Layout('layouts.admin', ['title' => 'Pembayaran IPL'])]
+    #[Layout('layouts.admin', ['title' => 'Pembayaran Iuran'])]
     public function render()
     {
         $query = $this->filteredQuery();

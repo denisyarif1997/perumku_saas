@@ -25,8 +25,6 @@ use App\Livewire\Admin\Residents\Form as ResidentForm;
 use App\Livewire\Admin\Residents\Index as ResidentIndex;
 use App\Livewire\Admin\Roles\Index as RoleIndex;
 use App\Livewire\Admin\Users\Index as UserIndex;
-use App\Livewire\Admin\Water\Rates\Index as WaterRateIndex;
-use App\Livewire\Admin\Water\Readings as WaterReadings;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
 use App\Livewire\Platform\Dashboard as PlatformDashboard;
@@ -102,11 +100,6 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/billings', BillingIndex::class)->name('billings.index')->middleware('permission:manage-billing,verify-payment');
             Route::get('/billings/{billing}', BillingShow::class)->name('billings.show')->middleware('permission:manage-billing,verify-payment');
             Route::get('/payments', PaymentIndex::class)->name('payments.index')->middleware('permission:manage-payment,verify-payment');
-        });
-
-        Route::prefix('water')->name('water.')->group(function () {
-            Route::get('/rates', WaterRateIndex::class)->name('rates.index')->middleware('permission:manage-billing');
-            Route::get('/readings', WaterReadings::class)->name('readings')->middleware('permission:manage-billing');
         });
 
         Route::prefix('cash')->name('cash.')->group(function () {

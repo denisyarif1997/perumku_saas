@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 class IplBillingService
 {
     /**
-     * Generate tagihan IPL untuk rumah aktif pada satu periode.
+     * Generate tagihan iuran untuk rumah aktif pada satu periode.
      *
      * Mendukung multi-tarif per periode:
      * - Jika $rateId diisi: hanya tarif itu yang ditagihkan.

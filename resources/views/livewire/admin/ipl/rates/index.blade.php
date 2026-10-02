@@ -20,7 +20,7 @@
     {{-- Form tarif --}}
     <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4">
         <div class="mb-3 flex items-center justify-between">
-            <p class="font-bold">{{ $editingId ? 'Ubah Tarif IPL' : 'Tambah Tarif IPL' }}</p>
+            <p class="font-bold">{{ $editingId ? 'Ubah Tarif Iuran' : 'Tambah Tarif Iuran' }}</p>
             @if ($editingId)
                 <button wire:click="cancel" class="text-[14px] font-semibold text-[#64748B]">Batal</button>
             @endif
@@ -33,7 +33,7 @@
             />
 
             <x-ui.field label="Nama Tarif" :error="$errors->first('name')">
-                <input wire:model="name" placeholder="Contoh: IPL Bulanan 2026"
+                <input wire:model="name" placeholder="Contoh: Iuran Bulanan 2026"
                     class="min-h-[48px] w-full rounded-xl border border-[#E2E8F0] px-3 text-[15px] outline-none focus:border-[#0F172A]">
             </x-ui.field>
 
@@ -107,7 +107,7 @@
                 </div>
             </div>
         @empty
-            <x-ui.empty-state icon="tags" title="Belum ada tarif IPL" subtitle="Tambahkan tarif agar tagihan bisa digenerate." />
+            <x-ui.empty-state icon="tags" title="Belum ada tarif iuran" subtitle="Tambahkan tarif agar tagihan bisa digenerate." />
         @endforelse
     </div>
 
@@ -139,7 +139,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="px-4 py-8 text-center text-[#64748B]">Belum ada tarif IPL.</td></tr>
+                    <tr><td colspan="7" class="px-4 py-8 text-center text-[#64748B]">Belum ada tarif iuran.</td></tr>
                 @endforelse
             </tbody>
         </table>

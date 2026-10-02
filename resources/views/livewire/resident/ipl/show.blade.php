@@ -37,13 +37,10 @@
     <div class="rounded-2xl bg-teal-700 p-4 text-white">
         <div class="flex items-start justify-between gap-3">
             <div class="text-[13px] text-white/70">
-                <p>Tagihan {{ $billing->typeLabel() }} {{ $periodLabel }}</p>
+                <p>Tagihan {{ $periodLabel }}</p>
                 <p class="mt-1 text-[26px] font-bold text-white">@rupiah($billing->total)</p>
                 <p>Rumah {{ $billing->house?->fullLabel() ?? '-' }}</p>
                 <p>Jatuh tempo {{ $billing->due_date?->format('d/m/Y') ?? '-' }}</p>
-                @if ($billing->isWater())
-                    <p>Meter {{ $billing->meter_start }} → {{ $billing->meter_end }} m³ (pakai {{ $billing->usage_m3 }} m³)</p>
-                @endif
             </div>
             <x-ui.badge :color="$billing->statusColor()">{{ $billing->statusLabel() }}</x-ui.badge>
         </div>

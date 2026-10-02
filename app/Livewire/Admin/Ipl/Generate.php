@@ -165,7 +165,7 @@ class Generate extends Component
             'user_id' => auth()->id(),
             'action' => 'generate',
             'module' => 'billings',
-            'description' => 'Generate tagihan IPL '.Currency::period($year, $month)
+            'description' => 'Generate tagihan Iuran '.Currency::period($year, $month)
                 .' [tarif: '.$rateLabel.']'
                 .' — dibuat: '.$result['created']
                 .', dipulihkan: '.$result['restored']
@@ -176,7 +176,7 @@ class Generate extends Component
         $processed = $result['created'] + $result['restored'];
 
         if ($processed > 0) {
-            session()->flash('success', $processed.' tagihan IPL berhasil dibuat untuk periode '.Currency::period($year, $month).' (tarif: '.$rateLabel.').');
+            session()->flash('success', $processed.' tagihan Iuran berhasil dibuat untuk periode '.Currency::period($year, $month).' (tarif: '.$rateLabel.').');
         } elseif ($result['skipped'] > 0) {
             session()->flash('info', 'Rumah yang dipilih sudah memiliki tagihan untuk tarif & periode ini. Tidak ada duplikat yang dibuat. Untuk menagih tarif baru, pilih tarif yang berbeda.');
         } else {
@@ -184,7 +184,7 @@ class Generate extends Component
         }
     }
 
-    #[Layout('layouts.admin', ['title' => 'Generate Tagihan IPL'])]
+    #[Layout('layouts.admin', ['title' => 'Generate Tagihan Iuran'])]
     public function render()
     {
         $estateId = $this->housing_estate_id ? (int) $this->housing_estate_id : null;

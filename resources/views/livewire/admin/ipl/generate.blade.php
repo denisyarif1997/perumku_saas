@@ -10,7 +10,7 @@
     @endif
 
     <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4">
-        <p class="font-bold">Generate Tagihan IPL</p>
+        <p class="font-bold">Generate Tagihan Iuran</p>
         <p class="mt-1 text-[14px] text-[#64748B]">
             Pilih tarif lalu centang warga/rumah yang akan ditagih. Yang tidak dicentang tidak dibuatkan tagihan.
             Tarif baru bisa ditagihkan ke periode yang sama tanpa menghapus tagihan lama.
@@ -40,7 +40,7 @@
                 hint=""
             />
 
-            <x-ui.field label="Tarif IPL" :error="$errors->first('ipl_rate_id')">
+            <x-ui.field label="Tarif Iuran" :error="$errors->first('ipl_rate_id')">
                 <select wire:model.live="ipl_rate_id" class="min-h-[48px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[15px]">
                     <option value="">Otomatis (tarif berlaku)</option>
                     @foreach ($rates as $option)

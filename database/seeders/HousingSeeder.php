@@ -36,12 +36,12 @@ class HousingSeeder extends Seeder
         $residentRole = Role::where('slug', 'resident')->first();
 
         IplRate::firstOrCreate(
-            ['housing_estate_id' => $estate->id, 'name' => 'IPL Warga'],
+            ['housing_estate_id' => $estate->id, 'name' => 'Iuran Warga'],
             [
                 'amount' => 150000,
                 'period_type' => 'monthly',
                 'effective_date' => now()->startOfYear()->toDateString(),
-                'description' => 'Tarif IPL bulanan standar warga',
+                'description' => 'Tarif iuran bulanan standar warga',
                 'status' => 'active',
             ]
         );

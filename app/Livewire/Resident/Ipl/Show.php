@@ -172,7 +172,7 @@ class Show extends Component
     public function render()
     {
         return view('livewire.resident.ipl.show', [
-            'billing' => $this->billing->load(['house.block', 'iplRate', 'waterRate']),
+            'billing' => $this->billing->load(['house.block', 'iplRate']),
             'payments' => $this->billing->payments()->orderByDesc('id')->get(),
             'periodLabel' => $this->billing->periodLabel(),
             'remaining' => $this->billing->remaining(),

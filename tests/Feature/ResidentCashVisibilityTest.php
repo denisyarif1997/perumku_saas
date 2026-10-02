@@ -99,7 +99,6 @@ class ResidentCashVisibilityTest extends TestCase
             'invoice_number' => 'INV-RAHASIA-0001',
             'house_id' => House::firstOrFail()->id,
             'resident_id' => $resident->id,
-            'billing_type' => 'ipl',
             'period_month' => 1,
             'period_year' => 2026,
             'amount' => 150000,

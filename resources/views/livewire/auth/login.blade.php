@@ -4,7 +4,7 @@
         <div class="flex items-start justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-[#134E4A]">Masuk ke {{ config('app.name', 'Perumku') }}</h1>
-                <p class="mt-1 text-[14px] text-[#64748B]">Kelola Rumah, IPL / Iuran, dan layanan warga.</p>
+                <p class="mt-1 text-[14px] text-[#64748B]">Kelola Rumah, Iuran, dan layanan warga.</p>
             </div>
             {{-- <span class="mt-1 shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Aman</span> --}}
         </div>

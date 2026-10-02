@@ -23,8 +23,6 @@ class Index extends Component
 
     public string $statusFilter = '';
 
-    public string $typeFilter = '';
-
     public string $blockFilter = '';
 
     public string $periodMonth = '';
@@ -47,14 +45,14 @@ class Index extends Component
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'statusFilter', 'typeFilter', 'blockFilter', 'periodMonth', 'periodYear'], true)) {
+        if (in_array($property, ['search', 'statusFilter', 'blockFilter', 'periodMonth', 'periodYear'], true)) {
             $this->resetPage();
         }
     }
 
     public function resetFilter(): void
     {
-        $this->reset(['search', 'statusFilter', 'typeFilter', 'blockFilter', 'periodMonth']);
+        $this->reset(['search', 'statusFilter', 'blockFilter', 'periodMonth']);
         $this->periodYear = (string) now()->year;
         $this->resetPage();
     }
@@ -198,7 +196,7 @@ class Index extends Component
         abort_unless(auth()->user()->hasPermission('manage-billing') || auth()->user()->hasPermission('verify-payment'), 403);
 
         $billings = $this->filteredQuery()
-            ->with(['house.block', 'resident', 'iplRate', 'waterRate'])
+            ->with(['house.block', 'resident', 'iplRate'])
             ->orderByDesc('period_year')
             ->orderByDesc('period_month')
             ->orderBy('house_id')
@@ -207,18 +205,16 @@ class Index extends Component
         return response()->streamDownload(function () use ($billings) {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, ['Invoice', 'Tipe', 'Rumah', 'Blok', 'Penghuni', 'Periode', 'Tarif', 'Meter', 'Total', 'Dibayar', 'Sisa', 'Status', 'Jatuh Tempo']);
+            fputcsv($handle, ['Invoice', 'Rumah', 'Blok', 'Penghuni', 'Periode', 'Tarif', 'Total', 'Dibayar', 'Sisa', 'Status', 'Jatuh Tempo']);
 
             foreach ($billings as $billing) {
                 fputcsv($handle, [
                     $billing->invoice_number,
-                    $billing->typeLabel(),
                     $billing->house?->fullLabel() ?? '-',
                     $billing->house?->block?->code ?? '-',
                     $billing->resident?->name ?? '-',
                     $billing->periodLabel(),
-                    $billing->isWater() ? ($billing->waterRate?->name ?? '-') : ($billing->iplRate?->name ?? '-'),
-                    $billing->isWater() ? (($billing->meter_start ?? '-').'-'.($billing->meter_end ?? '-').' ('.($billing->usage_m3 ?? '-').' m3)') : '-',
+                    $billing->iplRate?->name ?? '-',
                     (string) $billing->total,
                     (string) $billing->paid_amount,
                     (string) $billing->remaining(),
@@ -242,13 +238,12 @@ class Index extends Component
                 ->orWhereHas('resident', fn (Builder $r) => $r->where('name', 'like', "%{$this->search}%"))
                 ->orWhereHas('house', fn (Builder $h) => $h->where('house_number', 'like', "%{$this->search}%"))))
             ->when($this->statusFilter, fn (Builder $q) => $q->where('status', $this->statusFilter))
-            ->when($this->typeFilter, fn (Builder $q) => $q->where('billing_type', $this->typeFilter))
             ->when($this->blockFilter, fn (Builder $q) => $q->whereHas('house', fn (Builder $h) => $h->where('housing_block_id', $this->blockFilter)))
             ->when($this->periodMonth, fn (Builder $q) => $q->where('period_month', $this->periodMonth))
             ->when($this->periodYear, fn (Builder $q) => $q->where('period_year', $this->periodYear));
     }
 
-    #[Layout('layouts.admin', ['title' => 'Tagihan IPL'])]
+    #[Layout('layouts.admin', ['title' => 'Tagihan Iuran'])]
     public function render()
     {
         $query = $this->filteredQuery();
@@ -262,7 +257,7 @@ class Index extends Component
 
         return view('livewire.admin.ipl.billings.index', [
             'billings' => (clone $query)
-                ->with(['house.block', 'resident', 'iplRate', 'waterRate'])
+                ->with(['house.block', 'resident', 'iplRate'])
                 ->orderByDesc('period_year')
                 ->orderByDesc('period_month')
                 ->orderBy('house_id')

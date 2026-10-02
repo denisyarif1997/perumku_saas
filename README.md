@@ -230,8 +230,7 @@ Model yang memakai trait:
 ```
 ActivityLog, Announcement, Billing, CashAccount, CashTransaction, ChessGame,
 Complaint, ComplaintResponse, House, HouseResident, HousingBlock, HousingEstate,
-IplRate, Payment, Post, PostComment, PostPollVote, Resident, User,
-WaterMeterReading, WaterRate
+IplRate, Payment, Post, PostComment, PostPollVote, Resident, User
 ```
 
 ### 3. Kunci tulis (sisi tulis)

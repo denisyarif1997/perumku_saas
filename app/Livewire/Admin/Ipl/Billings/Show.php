@@ -111,7 +111,7 @@ class Show extends Component
             ActivityLog::record([
                 'user_id' => auth()->id(), 'action' => 'create', 'module' => 'payments',
                 'subject_type' => Billing::class, 'subject_id' => $billing->id,
-                'description' => 'Mencatat pembayaran IPL '.$billing->invoice_number.' (masuk kas '.$account->name.')',
+                'description' => 'Mencatat pembayaran Iuran '.$billing->invoice_number.' (masuk kas '.$account->name.')',
                 'new_values' => $billing->fresh()->toArray(),
             ]);
         });
@@ -355,11 +355,11 @@ class Show extends Component
         session()->flash('success', 'Tagihan aktif kembali.');
     }
 
-    #[Layout('layouts.admin', ['title' => 'Detail Tagihan IPL'])]
+    #[Layout('layouts.admin', ['title' => 'Detail Tagihan Iuran'])]
     public function render()
     {
         return view('livewire.admin.ipl.billings.show', [
-            'billing' => $this->billing->load(['house.block', 'resident', 'iplRate', 'waterRate']),
+            'billing' => $this->billing->load(['house.block', 'resident', 'iplRate']),
             'payments' => $this->billing->payments()
                 ->with(['verifier', 'resident'])
                 ->orderByDesc('payment_date')

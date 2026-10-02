@@ -44,8 +44,6 @@ class AdminMenuTest extends TestCase
         $this->assertContains('admin.dashboard', $routes);
         $this->assertContains('admin.ipl.billings.index', $routes);
         $this->assertContains('admin.cash.transactions.index', $routes);
-        // manage-billing juga membuka menu Air.
-        $this->assertContains('admin.water.readings', $routes);
 
         // Menu di luar permission finance tidak tampil.
         $this->assertNotContains('admin.estates.index', $routes);

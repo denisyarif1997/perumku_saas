@@ -222,7 +222,7 @@ class RbacTest extends TestCase
         // Modul keuangan tetap tampil untuk role Finance
         $response->assertSee(route('admin.ipl.billings.index'), false);
         $response->assertSee(route('admin.ipl.payments.index'), false);
-        $response->assertSee('Tagihan IPL', false);
+        $response->assertSee('Tagihan Iuran', false);
 
         // Modul di luar permission Finance tidak dirender di navigasi
         $response->assertDontSee(route('admin.roles.index'), false);

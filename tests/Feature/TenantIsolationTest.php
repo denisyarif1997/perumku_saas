@@ -629,7 +629,6 @@ class TenantIsolationTest extends TestCase
             'invoice_number' => 'INV-B-DERIVE-0001',
             'house_id' => $houseB->id,
             'resident_id' => $residentB->id,
-            'billing_type' => 'ipl',
             'period_month' => 2,
             'period_year' => 2026,
             'amount' => 250000,
@@ -682,8 +681,6 @@ class TenantIsolationTest extends TestCase
             'admin.cash.accounts.index',
             'admin.ipl.rates.index',
             'admin.ipl.generate',
-            'admin.water.rates.index',
-            'admin.water.readings',
         ];
     }
 
@@ -913,7 +910,6 @@ class TenantIsolationTest extends TestCase
             'invoice_number' => 'IPL-B-RAHASIA-0001',
             'house_id' => $houseB->id,
             'resident_id' => $residentB->id,
-            'billing_type' => 'ipl',
             'period_month' => 3,
             'period_year' => 2026,
             'amount' => 175000,
@@ -990,7 +986,6 @@ class TenantIsolationTest extends TestCase
                 'invoice_number' => $invoice,
                 'house_id' => $house->id,
                 'resident_id' => $residentB->id,
-                'billing_type' => 'ipl',
                 'period_month' => 1,
                 'period_year' => 2026,
                 'amount' => $amount,
@@ -1034,7 +1029,6 @@ class TenantIsolationTest extends TestCase
             'invoice_number' => 'INV-B-0001',
             'house_id' => $houseB->id,
             'resident_id' => $residentB->id,
-            'billing_type' => 'ipl',
             'period_month' => 1,
             'period_year' => 2026,
             'amount' => 150000,

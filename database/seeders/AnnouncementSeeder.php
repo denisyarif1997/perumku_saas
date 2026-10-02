@@ -24,8 +24,8 @@ class AnnouncementSeeder extends Seeder
                 'is_pinned' => true,
             ],
             [
-                'title' => 'IPL Bulan September 2026 Telah Diterbitkan',
-                'content' => 'Tagihan IPL periode September 2026 sudah dapat dilihat pada menu IPL di aplikasi. Mohon lakukan pembayaran sebelum tanggal 10 untuk menghindari denda keterlambatan.',
+                'title' => 'Iuran Bulan September 2026 Telah Diterbitkan',
+                'content' => 'Tagihan iuran periode September 2026 sudah dapat dilihat pada menu Iuran di aplikasi. Mohon lakukan pembayaran sebelum tanggal 10 untuk menghindari denda keterlambatan.',
                 'category' => 'billing',
                 'priority' => 'normal',
                 'is_pinned' => false,

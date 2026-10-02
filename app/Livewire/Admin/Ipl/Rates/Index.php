@@ -85,8 +85,8 @@ class Index extends Component
             'status' => ['required', 'in:active,inactive'],
         ], [
             'name.required' => 'Nama tarif wajib diisi.',
-            'amount.required' => 'Nominal IPL wajib diisi.',
-            'amount.min' => 'Nominal IPL tidak boleh negatif.',
+            'amount.required' => 'Nominal Iuran wajib diisi.',
+            'amount.min' => 'Nominal Iuran tidak boleh negatif.',
             'effective_date.required' => 'Tanggal berlaku wajib diisi.',
             'end_date.after_or_equal' => 'Tanggal berakhir tidak boleh sebelum tanggal berlaku.',
         ]);
@@ -103,22 +103,22 @@ class Index extends Component
             ActivityLog::record([
                 'user_id' => auth()->id(), 'action' => 'update', 'module' => 'ipl_rates',
                 'subject_type' => IplRate::class, 'subject_id' => $rate->id,
-                'description' => 'Mengubah tarif IPL '.$rate->name,
+                'description' => 'Mengubah tarif Iuran '.$rate->name,
                 'old_values' => $old, 'new_values' => $rate->fresh()->toArray(),
             ]);
 
-            session()->flash('success', 'Tarif IPL berhasil diubah.');
+            session()->flash('success', 'Tarif Iuran berhasil diubah.');
         } else {
             $rate = IplRate::create($data);
 
             ActivityLog::record([
                 'user_id' => auth()->id(), 'action' => 'create', 'module' => 'ipl_rates',
                 'subject_type' => IplRate::class, 'subject_id' => $rate->id,
-                'description' => 'Menambah tarif IPL '.$rate->name,
+                'description' => 'Menambah tarif Iuran '.$rate->name,
                 'new_values' => $rate->toArray(),
             ]);
 
-            session()->flash('success', 'Tarif IPL berhasil ditambah.');
+            session()->flash('success', 'Tarif Iuran berhasil ditambah.');
         }
 
         $this->cancel();
@@ -141,7 +141,7 @@ class Index extends Component
         ActivityLog::record([
             'user_id' => auth()->id(), 'action' => 'delete', 'module' => 'ipl_rates',
             'subject_type' => IplRate::class, 'subject_id' => $id,
-            'description' => 'Menghapus tarif IPL '.$rate->name,
+            'description' => 'Menghapus tarif Iuran '.$rate->name,
             'old_values' => $rate->toArray(),
         ]);
 
@@ -149,10 +149,10 @@ class Index extends Component
             $this->cancel();
         }
 
-        session()->flash('success', 'Tarif IPL berhasil dihapus.');
+        session()->flash('success', 'Tarif Iuran berhasil dihapus.');
     }
 
-    #[Layout('layouts.admin', ['title' => 'Tarif IPL'])]
+    #[Layout('layouts.admin', ['title' => 'Tarif Iuran'])]
     public function render()
     {
         return view('livewire.admin.ipl.rates.index', [

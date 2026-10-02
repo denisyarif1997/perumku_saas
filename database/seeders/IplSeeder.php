@@ -13,13 +13,13 @@ use Illuminate\Support\Carbon;
 class IplSeeder extends Seeder
 {
     /**
-     * Data demo IPL: tarif bulanan + tagihan 3 periode terakhir.
+     * Data demo iuran: tarif bulanan + tagihan 3 periode terakhir.
      * Periode sebelum bulan berjalan ditandai lunas, periode berjalan dibiarkan belum bayar.
      */
     public function run(): void
     {
         $rate = IplRate::firstOrCreate(
-            ['name' => 'IPL Bulanan Standar', 'housing_estate_id' => null],
+            ['name' => 'Iuran Bulanan Standar', 'housing_estate_id' => null],
             [
                 'amount' => 150000,
                 'period_type' => 'monthly',
@@ -69,7 +69,7 @@ class IplSeeder extends Seeder
                         'payment_method' => $method,
                         'status' => 'verified',
                         'verified_at' => $period->copy()->day(8)->endOfDay(),
-                        'notes' => 'Data demo pelunasan IPL.',
+                        'notes' => 'Data demo pelunasan iuran.',
                     ]
                 );
 

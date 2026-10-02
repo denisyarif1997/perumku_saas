@@ -14,8 +14,6 @@ class Index extends Component
 
     public string $statusFilter = '';
 
-    public string $typeFilter = '';
-
     public string $yearFilter = '';
 
     public function mount(): void
@@ -26,7 +24,7 @@ class Index extends Component
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['statusFilter', 'typeFilter', 'yearFilter'], true)) {
+        if (in_array($property, ['statusFilter', 'yearFilter'], true)) {
             $this->resetPage();
         }
     }
@@ -51,7 +49,7 @@ class Index extends Component
                     ->where('status', 'active')));
     }
 
-    #[Layout('layouts.resident', ['title' => 'Tagihan IPL'])]
+    #[Layout('layouts.resident', ['title' => 'Tagihan Iuran'])]
     public function render()
     {
         $query = $this->residentQuery();
@@ -70,9 +68,8 @@ class Index extends Component
 
         return view('livewire.resident.ipl.index', [
             'billings' => (clone $query)
-                ->with(['house.block', 'iplRate', 'waterRate'])
+                ->with(['house.block', 'iplRate'])
                 ->when($this->statusFilter, fn (Builder $q) => $q->where('status', $this->statusFilter))
-                ->when($this->typeFilter, fn (Builder $q) => $q->where('billing_type', $this->typeFilter))
                 ->when($this->yearFilter, fn (Builder $q) => $q->where('period_year', $this->yearFilter))
                 ->orderByDesc('period_year')
                 ->orderByDesc('period_month')

@@ -28,16 +28,13 @@ class AdminMenu
                 ['admin.houses.index', 'house', 'Rumah', 'admin.houses.*', ['menu-houses'], ['manage-houses']],
                 ['admin.residents.index', 'users', 'Warga', 'admin.residents.*', ['menu-residents'], ['manage-residents']],
             ]],
-            ['label' => 'Keuangan — IPL', 'items' => [
-                ['admin.ipl.billings.index', 'file-text', 'Tagihan IPL', 'admin.ipl.billings.*', ['menu-ipl-billings'], ['manage-billing', 'verify-payment']],
+            ['label' => 'Keuangan — Iuran', 'items' => [
+                ['admin.ipl.billings.index', 'file-text', 'Tagihan Iuran', 'admin.ipl.billings.*', ['menu-ipl-billings'], ['manage-billing', 'verify-payment']],
                 ['admin.ipl.generate', 'calendar-plus', 'Generate Tagihan', 'admin.ipl.generate', ['menu-ipl-generate'], ['manage-billing']],
                 ['admin.ipl.payments.index', 'receipt', 'Pembayaran', 'admin.ipl.payments.*', ['menu-ipl-payments'], ['manage-payment', 'verify-payment']],
-                ['admin.ipl.rates.index', 'tags', 'Tarif IPL', 'admin.ipl.rates.*', ['menu-ipl-rates'], ['manage-billing']],
+                ['admin.ipl.rates.index', 'tags', 'Tarif Iuran', 'admin.ipl.rates.*', ['menu-ipl-rates'], ['manage-billing']],
             ]],
-            ['label' => 'Keuangan — Air', 'items' => [
-                ['admin.water.readings', 'droplets', 'Catat Meter', 'admin.water.readings', ['menu-water-readings'], ['manage-billing']],
-                ['admin.water.rates.index', 'tags', 'Tarif Air', 'admin.water.rates.*', ['menu-water-rates'], ['manage-billing']],
-            ]],
+
             ['label' => 'Keuangan — Kas Warga', 'items' => [
                 ['admin.cash.accounts.index', 'wallet', 'Daftar Kas', 'admin.cash.accounts.*', ['menu-cash-accounts'], ['manage-finance']],
                 ['admin.cash.transactions.index', 'arrow-left-right', 'Transaksi Kas', 'admin.cash.transactions.*', ['menu-cash-transactions'], ['manage-finance']],

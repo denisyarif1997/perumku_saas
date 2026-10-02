@@ -41,11 +41,6 @@
                 <option value="paid">Lunas</option>
                 <option value="cancelled">Dibatalkan</option>
             </select>
-            <select wire:model.live="typeFilter" class="min-h-[48px] w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-[15px]">
-                <option value="">IPL + Air</option>
-                <option value="ipl">IPL</option>
-                <option value="water">Air</option>
-            </select>
             <select wire:model.live="blockFilter" class="min-h-[48px] w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-[15px]">
                 <option value="">Semua Blok</option>
                 @foreach ($blocks as $block)
@@ -87,11 +82,8 @@
                 </div>
                 <p class="mt-2 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-slate-100 px-2 py-0.5 text-[12px] font-semibold text-slate-700">
                     <i data-lucide="tag" class="h-3.5 w-3.5 shrink-0 text-slate-500"></i>
-                    <span class="truncate">[{{ $billing->typeLabel() }}] {{ $billing->isWater() ? ($billing->waterRate?->name ?? 'Tarif air tidak tercatat') : ($billing->iplRate?->name ?? 'Tarif tidak tercatat') }}</span>
+                    <span class="truncate">{{ $billing->iplRate?->name ?? 'Tarif tidak tercatat' }}</span>
                 </p>
-                @if ($billing->isWater())
-                    <p class="mt-1 text-[12px] text-[#64748B]">Meter {{ $billing->meter_start }} → {{ $billing->meter_end }} m³ · Pakai {{ $billing->usage_m3 }} m³</p>
-                @endif
                 <div class="mt-2 flex items-end justify-between gap-2">
                     <div>
                         <p class="text-[18px] font-bold">@rupiah($billing->total)</p>
@@ -109,7 +101,7 @@
                 </div>
             </div>
         @empty
-            <x-ui.empty-state icon="file-text" title="Belum ada tagihan" subtitle="Generate tagihan IPL terlebih dahulu." />
+            <x-ui.empty-state icon="file-text" title="Belum ada tagihan" subtitle="Generate tagihan iuran terlebih dahulu." />
         @endforelse
     </div>
 
@@ -137,13 +129,10 @@
                         <td class="max-w-[200px] truncate px-5 py-4 text-[#64748B]">{{ $billing->resident?->name ?? '-' }}</td>
                         <td class="whitespace-nowrap px-5 py-4">{{ $billing->periodLabel() }}</td>
                         <td class="px-5 py-4">
-                            <span class="inline-flex max-w-[220px] items-center gap-1.5 truncate rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-700" title="{{ $billing->isWater() ? ($billing->waterRate?->name ?? 'Tarif air tidak tercatat') : ($billing->iplRate?->name ?? 'Tarif tidak tercatat') }}">
+                            <span class="inline-flex max-w-[220px] items-center gap-1.5 truncate rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-700" title="{{ $billing->iplRate?->name ?? 'Tarif tidak tercatat' }}">
                                 <i data-lucide="tag" class="h-3.5 w-3.5 shrink-0 text-slate-500"></i>
-                                <span class="truncate">[{{ $billing->typeLabel() }}] {{ $billing->isWater() ? ($billing->waterRate?->name ?? 'Tarif air tidak tercatat') : ($billing->iplRate?->name ?? 'Tarif tidak tercatat') }}</span>
+                                <span class="truncate">{{ $billing->iplRate?->name ?? 'Tarif tidak tercatat' }}</span>
                             </span>
-                            @if ($billing->isWater())
-                                <p class="mt-1 text-[12px] text-[#64748B]">{{ $billing->meter_start }}→{{ $billing->meter_end }} m³ ({{ $billing->usage_m3 }} m³)</p>
-                            @endif
                         </td>
                         <td class="whitespace-nowrap px-5 py-4 font-semibold">@rupiah($billing->total)</td>
                         <td class="whitespace-nowrap px-5 py-4">@rupiah($billing->paid_amount)</td>

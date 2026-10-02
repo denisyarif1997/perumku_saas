@@ -40,8 +40,8 @@
                         <span class="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-700">Blok</span>
                     </div>
                     <p class="mt-5 text-3xl font-bold text-[#134E4A]">{{ $totalBlocks }}</p>
-                    <p class="mt-1 text-sm text-[#64748B]">Total area</p>
-                    <div class="mt-3 text-[12px] text-[#64748B]">Tersedia untuk pengelolaan</div>
+                    <p class="mt-1 text-sm text-[#64748B]">Total Blok</p>
+                    <div class="mt-3 text-[12px] text-[#64748B]">Total Jumlah Blok Perumahan</div>
                 </div>
             @endif
 
@@ -69,7 +69,7 @@
             <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#94A3B8]">Periode berjalan</p>
-                    <h2 class="text-xl font-bold text-[#134E4A]">IPL {{ $periodLabel }}</h2>
+                    <h2 class="text-xl font-bold text-[#134E4A]">Iuran {{ $periodLabel }}</h2>
                 </div>
                 @if ($canManageBilling)
                     <a href="{{ route('admin.ipl.billings.index') }}" wire:navigate class="inline-flex items-center gap-2 rounded-full bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-100">
@@ -163,7 +163,7 @@
                             </div>
                         </div>
                     @empty
-                        <x-ui.empty-state icon="receipt" title="Belum ada pembayaran" subtitle="Generate tagihan IPL terlebih dahulu." />
+                        <x-ui.empty-state icon="receipt" title="Belum ada pembayaran" subtitle="Generate tagihan iuran terlebih dahulu." />
                     @endforelse
                 </div>
             </div>

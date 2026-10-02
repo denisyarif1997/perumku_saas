@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    {{-- KARTU IPL --}}
+    {{-- KARTU IURAN --}}
     <div class="rounded-[24px] bg-white p-5 shadow-[0_8px_30px_-6px_rgba(19,78,74,0.12)]">
         <div class="flex items-center justify-between gap-2">
             <p class="text-[15px] font-bold text-[#134E4A]">Iuran</p>
@@ -44,7 +44,7 @@
                                 <x-ui.badge color="{{ $overdue->statusColor() }}" class="shrink-0">{{ $overdue->statusLabel() }}</x-ui.badge>
                             </div>
                             <p class="mt-0.5 truncate text-[12px] text-slate-500">
-                                {{ $overdue->rateName() }} · JT {{ $overdue->due_date?->format('d/m/Y') ?? '-' }}
+                                {{ $overdue->iplRate?->name ?? 'Tarif tidak tercatat' }} · JT {{ $overdue->due_date?->format('d/m/Y') ?? '-' }}
                             </p>
                             <div class="mt-1.5 flex items-center justify-between gap-2">
                                 <p class="text-[13px] font-bold text-red-700">@rupiah($overdue->remaining())</p>
@@ -65,7 +65,7 @@
                     class="block rounded-2xl border border-[#EEF2F1] p-3.5 transition active:scale-[0.98] active:bg-slate-50">
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0 flex-1">
-                            <p class="truncate text-[14px] font-bold">{{ $billing->rateName() }}</p>
+                            <p class="truncate text-[14px] font-bold">{{ $billing->iplRate?->name ?? 'Tarif tidak tercatat' }}</p>
                             <p class="mt-0.5 text-[13px] text-[#64748B]">Rumah {{ $billing->house?->fullLabel() ?? '-' }} · JT {{ $billing->due_date?->format('d/m/Y') }}</p>
                         </div>
                         <x-ui.badge color="{{ $billing->statusColor() }}" class="shrink-0">{{ $billing->statusLabel() }}</x-ui.badge>
@@ -90,7 +90,7 @@
             </div>
         @else
             <div class="mt-4 rounded-2xl bg-emerald-50 p-3.5 text-[13px] font-semibold text-emerald-700">
-                Semua Iuran IPL sudah lunas. Terima kasih! 🎉
+                Semua iuran sudah lunas. Terima kasih! 🎉
             </div>
         @endif
     </div>

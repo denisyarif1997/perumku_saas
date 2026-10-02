@@ -28,13 +28,11 @@ class Dashboard extends Component
                     ->orWhereHas('house.houseResidents', fn ($relation) => $relation
                         ->where('resident_id', $residentId)
                         ->where('status', 'active')))
-                ->with(['house.block', 'iplRate', 'waterRate'])
+                ->with(['house.block', 'iplRate'])
                 ->orderByDesc('period_year')
                 ->orderByDesc('period_month')
                 ->get();
         }
-
-        
 
         $outstanding = $billings->whereIn('status', ['unpaid', 'partial']);
 

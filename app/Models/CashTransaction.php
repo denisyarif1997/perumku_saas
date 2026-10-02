@@ -106,7 +106,7 @@ class CashTransaction extends Model
     }
 
     /**
-     * Catat kas masuk otomatis dari pembayaran IPL yang diverifikasi.
+     * Catat kas masuk otomatis dari pembayaran iuran yang diverifikasi.
      */
     public static function recordForPayment(Payment $payment, CashAccount $account, int $userId): ?self
     {
@@ -125,7 +125,7 @@ class CashTransaction extends Model
             'transaction_date' => $payment->payment_date ?? now()->toDateString(),
             'category' => 'ipl',
             'reference' => $payment->payment_number,
-            'description' => 'Pembayaran '.($billing?->typeLabel() ?? 'IPL').' '.$billing?->invoice_number
+            'description' => 'Pembayaran Iuran '.$billing?->invoice_number
                 .' — '.($payment->resident?->name ?? 'warga'),
             'created_by' => $userId,
         ]);

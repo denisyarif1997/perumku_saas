@@ -30,7 +30,7 @@ class Index extends Component
      * Riwayat mutasi kas, dipangkas di level kolom.
      *
      * Kolom yang dimuat sengaja sedikit: description memuat nama warga
-     * ("Pembayaran IPL-2026-... — Budi"), reference adalah nomor invoice yang
+     * ("Pembayaran Iuran - 2026... — Budi"), reference adalah nomor invoice yang
      * bisa ditelusuri balik ke pembayar, dan created_by menunjuk petugas.
      * Ketiganya tidak boleh masuk ke payload halaman ini. Memangkas di
      * select() membuat kebocoran mustahil terjadi walau view berubah.

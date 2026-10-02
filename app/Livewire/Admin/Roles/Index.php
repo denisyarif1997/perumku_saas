@@ -20,7 +20,7 @@ class Index extends Component
     public const GROUP_LABELS = [
         'general' => 'Umum',
         'master' => 'Data Master',
-        'billing' => 'Keuangan & IPL',
+        'billing' => 'Keuangan & Iuran',
         'communication' => 'Komunikasi',
         'service' => 'Layanan Warga',
         'marketplace' => 'Marketplace',
