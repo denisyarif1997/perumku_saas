@@ -15,7 +15,33 @@ class ActivityLog extends Model
 
     public $timestamps = true;
 
-    /** Log aktivitas mengikuti estate dari pelakunya (user). */
+    /**
+     * Nama modul yang dipakai saat ActivityLog::record() dipanggil.
+     *
+     * Dipakai dashboard platform untuk mengubah slug modul menjadi label
+     * yang terbaca manusia, bukan menampilkan "cash_transactions" mentah.
+     */
+    public const MODULE_LABELS = [
+        'announcements' => 'Pengumuman',
+        'billings' => 'Tagihan Iuran',
+        'cash_accounts' => 'Kas Warga',
+        'cash_transactions' => 'Transaksi Kas',
+        'complaints' => 'Pengaduan',
+        'forum' => 'Forum Warga',
+        'houses' => 'Rumah',
+        'housing_blocks' => 'Blok',
+        'housing_estates' => 'Perumahan',
+        'inventory' => 'Inventaris',
+        'ipl_rates' => 'Tarif Iuran',
+        'payments' => 'Pembayaran',
+        'residents' => 'Warga',
+        'roles' => 'Role & Akses',
+        'users' => 'Manajemen User',
+    ];
+
+    /**
+     * Log aktivitas mengikuti estate dari pelakunya (user).
+     */
     public function applyEstateScope(Builder $query, int $estateId): void
     {
         if ($estateId === CurrentEstate::NONE) {
@@ -26,6 +52,19 @@ class ActivityLog extends Model
 
         $query->whereHas('user', fn (Builder $q) => $q
             ->where(fn (Builder $u) => $u->where('housing_estate_id', $estateId)->orWhereNull('housing_estate_id')));
+    }
+
+    /**
+     * Label manusia untuk slug modul, dengan fallback ke nama aslinya agar
+     * modul baru tidak pernah tampil kosong.
+     */
+    public static function moduleLabel(?string $module): string
+    {
+        if ($module === null || $module === '') {
+            return 'Tanpa Modul';
+        }
+
+        return self::MODULE_LABELS[$module] ?? $module;
     }
 
     protected $fillable = [

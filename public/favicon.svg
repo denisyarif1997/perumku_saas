@@ -1,8 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-    <!-- Replika icon brand di layout: kotak rounded-2xl #0F172A + Lucide "house" putih -->
-    <rect width="64" height="64" rx="25.6" fill="#0F172A"/>
-    <g transform="translate(16,16) scale(1.3333)" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
-        <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Background Rounded Rectangle -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="#2A8B80" />
+  
+  <!-- House Outer Shape -->
+  <path d="M 256 120 
+           L 380 220 
+           A 12 12 0 0 1 384 229
+           L 384 372 
+           A 20 20 0 0 1 364 392 
+           L 148 392 
+           A 20 20 0 0 1 128 372 
+           L 128 229 
+           A 12 12 0 0 1 132 220 
+           Z" 
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="28" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+        
+  <!-- Door Inner Shape -->
+  <path d="M 212 392 
+           L 212 264 
+           A 12 12 0 0 1 224 252 
+           L 288 252 
+           A 12 12 0 0 1 300 264 
+           L 300 392" 
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="28" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
 </svg>

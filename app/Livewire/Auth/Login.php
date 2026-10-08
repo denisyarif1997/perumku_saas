@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -30,6 +31,17 @@ class Login extends Component
             'email.email' => 'Format email tidak valid.',
             'password.required' => 'Password wajib diisi.',
         ]);
+
+        $user = User::query()->where('email', strtolower(trim($this->email)))->first();
+
+        // Pendaftar pending: izinkan masuk untuk melanjutkan onboarding.
+        if ($user && $user->status === 'pending' && $user->password && password_verify($this->password, $user->password)) {
+            Auth::login($user, $this->remember);
+            session()->regenerate();
+            $user->update(['last_login_at' => now()]);
+
+            return $this->redirectRoute('onboarding', navigate: true);
+        }
 
         if (! Auth::attempt(['email' => $this->email, 'password' => $this->password, 'status' => 'active'], $this->remember)) {
             $this->addError('email', 'Email atau password salah, atau akun tidak aktif.');

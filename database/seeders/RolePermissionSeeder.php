@@ -91,6 +91,7 @@ class RolePermissionSeeder extends Seeder
             'menu-users' => ['manage-user'],
             'menu-roles' => ['manage-role'],
             'menu-activity-logs' => ['view-activity-log'],
+            'menu-registrations' => [],
         ];
 
         $menuLabels = [
@@ -114,6 +115,7 @@ class RolePermissionSeeder extends Seeder
             'menu-users' => 'Menu: User',
             'menu-roles' => 'Menu: Role & Akses',
             'menu-activity-logs' => 'Menu: Log Aktivitas',
+            'menu-registrations' => 'Menu: Verifikasi Perumahan',
         ];
 
         foreach ($menuMap as $slug => $actionSlugs) {

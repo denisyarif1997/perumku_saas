@@ -4,6 +4,7 @@ namespace App\Models\Concerns;
 
 use App\Models\Scopes\BelongsToEstateScope;
 use App\Support\CurrentEstate;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,6 +24,18 @@ trait BelongsToEstate
     public function estateScopeColumn(): string
     {
         return 'housing_estate_id';
+    }
+
+    /**
+     * Batasi ke baris yang dibuat sejak satu momen.
+     *
+     * Dipakai dashboard platform untuk menghitung pemakaian fitur dalam
+     * jendela waktu tertentu, tanpa menulis whereDate berulang di tiap
+     * query.
+     */
+    public function scopeSince(Builder $query, DateTimeInterface|string $moment): Builder
+    {
+        return $query->where($this->getCreatedAtColumn(), '>=', $moment);
     }
 
     public function applyEstateScope(Builder $query, int $estateId): void

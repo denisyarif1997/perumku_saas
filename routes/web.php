@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\PaymentProofController;
 use App\Livewire\Admin\ActivityLogs\Index as ActivityLogIndex;
 use App\Livewire\Admin\Blocks\Index as BlockIndex;
@@ -26,8 +27,10 @@ use App\Livewire\Admin\Residents\Index as ResidentIndex;
 use App\Livewire\Admin\Roles\Index as RoleIndex;
 use App\Livewire\Admin\Users\Index as UserIndex;
 use App\Livewire\Auth\Login;
+use App\Livewire\Auth\Onboarding;
 use App\Livewire\Auth\Register;
 use App\Livewire\Platform\Dashboard as PlatformDashboard;
+use App\Livewire\Platform\Registrations as PlatformRegistrations;
 use App\Livewire\Resident\Cash\Index as ResidentCashIndex;
 use App\Livewire\Resident\Chess\Index as ResidentChessIndex;
 use App\Livewire\Resident\Chess\Play as ResidentChessPlay;
@@ -48,9 +51,17 @@ Route::get('/', fn () => redirect()->route('login'));
 Route::middleware('guest')->group(function () {
     Route::get('/login', Login::class)->name('login');
     Route::get('/register', Register::class)->name('register');
+    Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect')->middleware('throttle:20,1');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback')->middleware('throttle:20,1');
 
     // Halaman promosi aplikasi, publik dan tanpa perlu masuk.
     Route::view('/info', 'marketing.info')->name('info');
+});
+
+Route::middleware(['auth'])->group(function () {
+    // Pendaftar pending melengkapi data diri + perumahan (tanpa middleware
+    // active agar akun pending bisa login dan mengisi onboarding).
+    Route::get('/onboarding', Onboarding::class)->name('onboarding');
 });
 
 Route::middleware(['auth', 'active'])->group(function () {
@@ -63,6 +74,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     // permission:access-admin karena isinya lintas seluruh condominan.
     Route::prefix('platform')->name('platform.')->middleware('role:super_admin')->group(function () {
         Route::get('/dashboard', PlatformDashboard::class)->name('dashboard');
+        Route::get('/registrations', PlatformRegistrations::class)->name('registrations');
     });
 
     Route::prefix('resident')->name('resident.')->group(function () {

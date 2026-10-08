@@ -2,19 +2,14 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class Register extends Component
 {
-    public string $estateCode = '';
-
-    public string $estateName = '';
-
-    public string $name = '';
-
-    public string $phone = '';
-
     public string $email = '';
 
     public string $password = '';
@@ -31,19 +26,9 @@ class Register extends Component
     public function register()
     {
         $data = $this->validate([
-            'estateCode' => ['required', 'string', 'max:20', 'alpha_dash'],
-            'estateName' => ['required', 'string', 'max:100'],
-            'name' => ['required', 'string', 'max:100'],
-            'phone' => ['required', 'string', 'min:10', 'max:15'],
             'email' => ['required', 'email', 'max:150'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
-            'estateCode.required' => 'Kode perumahan wajib diisi.',
-            'estateCode.alpha_dash' => 'Kode perumahan hanya boleh huruf, angka, tanda hubung, dan garis bawah.',
-            'estateName.required' => 'Nama perumahan wajib diisi.',
-            'name.required' => 'Nama lengkap wajib diisi.',
-            'phone.required' => 'Nomor HP/WA wajib diisi.',
-            'phone.min' => 'Nomor HP/WA minimal 10 digit.',
             'email.required' => 'Email wajib diisi.',
             'email.email' => 'Format email tidak valid.',
             'password.required' => 'Password wajib diisi.',
@@ -51,44 +36,34 @@ class Register extends Component
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
-        $targetWhatsapp = '6289525645332';
+        $email = strtolower(trim($data['email']));
+        $existing = User::query()->where('email', $email)->first();
 
-        $message = "Halo Admin, saya ingin mendaftarkan perumahan baru:\n\n"
-            . "• Kode Perumahan: " . strtoupper($data['estateCode']) . "\n"
-            . "• Nama Perumahan: {$data['estateName']}\n"
-            . "• Nama Admin: {$data['name']}\n"
-            . "• No HP/WA: {$data['phone']}\n"
-            . "• Email: {$data['email']}\n"
-            . "• Password Request: {$data['password']}\n\n"
-            . "Mohon dapat diproses akun perumahan kami. Terima kasih!";
+        // Email milik pendaftar pending → lanjutkan onboarding, bukan duplikat.
+        if ($existing && $existing->status === 'pending') {
+            Auth::login($existing);
+            session()->regenerate();
 
-        $url = 'https://wa.me/' . $targetWhatsapp . '?text=' . rawurlencode($message);
+            return $this->redirectRoute('onboarding', navigate: true);
+        }
 
-        return redirect()->away($url);
+        if ($existing) {
+            $this->addError('email', 'Email sudah terdaftar. Silakan masuk.');
+
+            return;
+        }
+
+        $user = User::create([
+            'name' => explode('@', $email)[0],
+            'email' => $email,
+            'password' => $data['password'],
+            'role_id' => Role::query()->where('slug', 'admin')->value('id'),
+            'status' => 'pending',
+        ]);
+
+        Auth::login($user);
+        session()->regenerate();
+
+        return $this->redirectRoute('onboarding', navigate: true);
     }
-
-    public function sendToWhatsapp()
-{
-    $data = $this->validate([
-        'estateCode' => ['required', 'string', 'max:20', 'alpha_dash'],
-        'estateName' => ['required', 'string', 'max:100'],
-        'name'       => ['required', 'string', 'max:100'],
-        'phone'      => ['required', 'string', 'min:10', 'max:15'],
-        'email'      => ['required', 'email', 'max:150'],
-        'password'   => ['required', 'string', 'min:8', 'confirmed'],
-    ]);
-
-    $targetWhatsapp = '6289525645332';
-
-    $message = "Halo Admin, saya ingin mendaftarkan perumahan baru di aplikasi perumku:\n\n"
-        . "• Kode Perumahan: " . strtoupper($data['estateCode']) . "\n"
-        . "• Nama Perumahan: {$data['estateName']}\n"
-        . "• Nama Admin: {$data['name']}\n"
-        . "• No HP/WA: {$data['phone']}\n"
-        . "• Email: {$data['email']}\n"
-        . "• Password Request: {$data['password']}\n\n"
-        . "Mohon dapat diproses akun perumahan kami. Terima kasih!";
-
-    return redirect()->away('https://wa.me/' . $targetWhatsapp . '?text=' . rawurlencode($message));
-}
 }

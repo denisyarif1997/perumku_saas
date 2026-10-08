@@ -19,7 +19,8 @@ class AdminMenu
             ['label' => null, 'items' => [
                 // Item platform dibatasi peran, bukan permission: isinya lintas
                 // seluruh condominan sehingga tidak boleh tampil untuk admin biasa.
-                ['platform.dashboard', 'globe', 'Dashboard Super Admin', 'platform.*', ['menu-dashboard'], [], ['super_admin']],
+                ['platform.dashboard', 'globe', 'Dashboard Platform', 'platform.*', ['menu-dashboard'], [], ['super_admin']],
+                ['platform.registrations', 'user-check', 'Verifikasi Perumahan', 'platform.registrations', ['menu-registrations'], [], ['super_admin']],
                 ['admin.dashboard', 'layout-dashboard', 'Dashboard', 'admin.dashboard', ['menu-dashboard'], ['view-dashboard']],
             ]],
             ['label' => 'Data Master', 'items' => [

@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\TrackPageVisit;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureActiveUser::class,
             'role' => EnsureRole::class,
             'permission' => EnsurePermission::class,
+        ]);
+
+        // Pencatatan kunjungan halaman untuk statistik pemakaian aplikasi
+        // di dashboard platform. appended (bukan prepend) supaya tidak
+        // menambah query pada respons yang gagal.
+        $middleware->web(append: [
+            TrackPageVisit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

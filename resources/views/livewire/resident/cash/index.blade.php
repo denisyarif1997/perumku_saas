@@ -7,7 +7,7 @@
         <div class="pointer-events-none absolute -bottom-8 right-12 h-14 w-14 rounded-full bg-amber-300/20"></div>
         <p class="text-[13px] font-medium text-teal-100">Total Saldo Kas</p>
         <p class="mt-1 text-[30px] font-bold">@rupiah($totalBalance)</p>
-        <p class="text-[13px] text-teal-100">Saldo kas bersama condominium</p>
+        <p class="text-[13px] text-teal-100">Saldo kas Warga</p>
         <div class="mt-3 grid grid-cols-2 gap-2 text-[13px]">
             <div class="rounded-2xl bg-white/10 p-3">
                 <p class="text-teal-100">Masuk {{ Currency::monthName(now()->month) }}</p>
