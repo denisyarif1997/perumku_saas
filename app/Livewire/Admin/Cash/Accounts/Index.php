@@ -4,7 +4,9 @@ namespace App\Livewire\Admin\Cash\Accounts;
 
 use App\Models\ActivityLog;
 use App\Models\CashAccount;
+use App\Support\CurrentEstate;
 use App\Models\HousingEstate;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -128,8 +130,17 @@ class Index extends Component
     #[Layout('layouts.admin', ['title' => 'Kas Warga'])]
     public function render()
     {
+        $estateId = CurrentEstate::id();
+
         return view('livewire.admin.cash.accounts.index', [
-            'accounts' => CashAccount::with('estate')
+            'accounts' => CashAccount::query()
+                ->when($estateId !== null && $estateId !== CurrentEstate::NONE, function (Builder $q) use ($estateId) {
+                    // Hanya akun milik estate aktif, ditambah akun global (housing_estate_id = NULL)
+                    // karena kas bersama bisa digunakan seluruh perumahan.
+                    $q->where('housing_estate_id', $estateId)
+                        ->orWhereNull('housing_estate_id');
+                })
+                ->with('estate')
                 ->withCount(['transactions', 'incomingTransfers'])
                 ->when($this->search, fn ($q) => $q->where(fn ($w) => $w
                     ->where('name', 'like', "%{$this->search}%")

@@ -5,6 +5,8 @@ namespace App\Livewire\Admin\Inventory;
 use App\Models\ActivityLog;
 use App\Models\ItemLoan;
 use App\Notifications\LoanStatusChanged;
+use App\Support\CurrentEstate;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -171,16 +173,31 @@ class Loans extends Component
     #[Layout('layouts.admin', ['title' => 'Pinjam Barang'])]
     public function render()
     {
+        $estateId = CurrentEstate::id();
+
+        $loans = ItemLoan::query()
+            ->with(['item', 'resident.houseResidents.house'])
+            ->when($estateId !== null && $estateId !== CurrentEstate::NONE, function (Builder $q) use ($estateId) {
+                $q->where('housing_estate_id', $estateId)
+                    ->orWhereNull('housing_estate_id');
+            })
+            ->when($this->search, fn ($query) => $query->where(function (Builder $q): void {
+                $q->whereHas('item', fn ($item) => $item->where('name', 'like', "%{$this->search}%"))
+                    ->orWhereHas('resident', fn ($r) => $r->where('name', 'like', "%{$this->search}%"));
+            }))
+            ->withStatus($this->statusFilter)
+            ->orderByDesc('id')
+            ->paginate(10);
+
+        $summary = [
+            'requested' => $this->estateIdFilter(ItemLoan::where('status', 'requested'), $estateId),
+            'approved' => $this->estateIdFilter(ItemLoan::where('status', 'approved'), $estateId),
+            'loaned' => $this->estateIdFilter(ItemLoan::where('status', 'loaned'), $estateId),
+            'returned' => $this->estateIdFilter(ItemLoan::where('status', 'returned'), $estateId),
+        ];
+
         return view('livewire.admin.inventory.loans', [
-            'loans' => ItemLoan::query()
-                ->with(['item', 'resident.houseResidents.house'])
-                ->when($this->search, fn ($query) => $query->where(function ($q): void {
-                    $q->whereHas('item', fn ($item) => $item->where('name', 'like', "%{$this->search}%"))
-                        ->orWhereHas('resident', fn ($r) => $r->where('name', 'like', "%{$this->search}%"));
-                }))
-                ->withStatus($this->statusFilter)
-                ->orderByDesc('id')
-                ->paginate(10),
+            'loans' => $loans,
             'statuses' => [
                 '' => 'Semua',
                 'requested' => 'Diajukan',
@@ -190,12 +207,23 @@ class Loans extends Component
                 'rejected' => 'Ditolak',
                 'cancelled' => 'Dibatalkan',
             ],
-            'summary' => [
-                'requested' => ItemLoan::where('status', 'requested')->count(),
-                'approved' => ItemLoan::where('status', 'approved')->count(),
-                'loaned' => ItemLoan::where('status', 'loaned')->count(),
-                'returned' => ItemLoan::where('status', 'returned')->count(),
-            ],
+            'summary' => $summary,
         ]);
+    }
+
+    /**
+     * Menghitung ringkasan status dengan filter estate. Mencegah loan dari
+     * perumahan lain tampil di ringkasan admin walaupun data yang mewakili
+     * rumah peminjamnya mengandung ID estate yang sama.
+     */
+    protected function estateIdFilter(Builder $query, ?int $estateId): int
+    {
+        if ($estateId === null || $estateId === CurrentEstate::NONE) {
+            return (int) $query->count();
+        }
+
+        return (int) $query->where('housing_estate_id', $estateId)
+            ->orWhereNull('housing_estate_id')
+            ->count();
     }
 }

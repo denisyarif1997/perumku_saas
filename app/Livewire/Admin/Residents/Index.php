@@ -3,9 +3,11 @@
 namespace App\Livewire\Admin\Residents;
 
 use App\Models\ActivityLog;
+use App\Models\CurrentEstate;
 use App\Models\HouseResident;
 use App\Models\Resident;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -80,8 +82,15 @@ class Index extends Component
     #[Layout('layouts.admin', ['title' => 'Warga'])]
     public function render()
     {
+        $estateId = CurrentEstate::id();
+
         $residents = Resident::with(['houseResidents.house.block', 'houseResidents.house.estate', 'user'])
-            ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%")->orWhere('nik', 'like', "%{$this->search}%")->orWhere('phone', 'like', "%{$this->search}%"))
+            ->when($estateId !== null && $estateId !== CurrentEstate::NONE, function (Builder $q) use ($estateId) {
+                $q->whereHas('houseResidents.house', fn (Builder $house) => $house->where('housing_estate_id', $estateId));
+            })
+            ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%")
+                ->orWhere('nik', 'like', "%{$this->search}%")
+                ->orWhere('phone', 'like', "%{$this->search}%"))
             ->latest()
             ->paginate(10);
 

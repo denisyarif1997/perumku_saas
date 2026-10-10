@@ -5,6 +5,8 @@ namespace App\Livewire\Admin\Cash\Transactions;
 use App\Models\ActivityLog;
 use App\Models\CashAccount;
 use App\Models\CashTransaction;
+use App\Support\CurrentEstate;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -156,19 +158,45 @@ class Index extends Component
     #[Layout('layouts.admin', ['title' => 'Transaksi Kas'])]
     public function render()
     {
-        $activeAccounts = CashAccount::active()->orderBy('name')->get();
+        $estateId = CurrentEstate::id();
+
+        $transactions = CashTransaction::with(['account', 'destinationAccount', 'creator'])
+            ->when($this->filterType, fn ($q) => $q->where('type', $this->filterType))
+            ->when($this->search, fn ($q) => $q->where(fn ($w) => $w
+                ->where('description', 'like', "%{$this->search}%")
+                ->orWhere('reference', 'like', "%{$this->search}%")
+                ->orWhere('category', 'like', "%{$this->search}%")))
+            ->orderByDesc('transaction_date')
+            ->orderByDesc('id');
+
+        // Konsisten dengan scope global BelongsToEstateScope, transaksi hanya
+        // ikut terbawa bila akun kas atau akun tujuan tampil di halaman ini (->accounts)
+        // atau bermarkir sebagai kas bersama (housing_estate_id = NULL).
+        if ($estateId !== null && $estateId !== CurrentEstate::NONE) {
+            $transactions = $transactions->where(function (Builder $q) use ($estateId) {
+                $q->whereHas('account', function (Builder $acc) use ($estateId) {
+                    $acc->where('housing_estate_id', $estateId)
+                        ->orWhereNull('housing_estate_id');
+                })
+                    ->orWhereHas('destinationAccount', function (Builder $dest) use ($estateId) {
+                        $dest->where('housing_estate_id', $estateId)
+                            ->orWhereNull('housing_estate_id');
+                    });
+            });
+        }
+
+        $transactions = $transactions->paginate(10);
 
         return view('livewire.admin.cash.transactions.index', [
-            'transactions' => CashTransaction::with(['account', 'destinationAccount', 'creator'])
-                ->when($this->filterType, fn ($q) => $q->where('type', $this->filterType))
-                ->when($this->search, fn ($q) => $q->where(fn ($w) => $w
-                    ->where('description', 'like', "%{$this->search}%")
-                    ->orWhere('reference', 'like', "%{$this->search}%")
-                    ->orWhere('category', 'like', "%{$this->search}%")))
-                ->orderByDesc('transaction_date')
-                ->orderByDesc('id')
-                ->paginate(10),
-            'accounts' => $activeAccounts,
+            'transactions' => $transactions,
+            'accounts' => CashAccount::query()
+                ->when($estateId !== null && $estateId !== CurrentEstate::NONE, function (Builder $q) use ($estateId) {
+                    $q->where('housing_estate_id', $estateId)
+                        ->orWhereNull('housing_estate_id');
+                })
+                ->active()
+                ->orderBy('name')
+                ->get(),
             'totalIn' => CashTransaction::where('type', CashTransaction::TYPE_IN)->sum('amount'),
             'totalOut' => CashTransaction::where('type', CashTransaction::TYPE_OUT)->sum('amount'),
             'totalTransfer' => CashTransaction::where('type', CashTransaction::TYPE_TRANSFER)->sum('amount'),

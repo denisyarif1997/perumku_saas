@@ -5,6 +5,8 @@ namespace App\Livewire\Admin\Inventory;
 use App\Models\ActivityLog;
 use App\Models\InventoryItem;
 use App\Models\ItemLoan;
+use App\Support\CurrentEstate;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -222,13 +224,21 @@ class Items extends Component
     #[Layout('layouts.admin', ['title' => 'Inventaris Barang'])]
     public function render()
     {
+        $estateId = CurrentEstate::id();
+
+        $items = InventoryItem::query()
+            ->withCount(['loans as borrowed_count' => fn ($query) => $query->where('status', 'loaned')])
+            ->when($estateId !== null && $estateId !== CurrentEstate::NONE, function (Builder $q) use ($estateId) {
+                $q->where('housing_estate_id', $estateId)
+                    ->orWhereNull('housing_estate_id');
+            })
+            ->search($this->search)
+            ->when($this->statusFilter, fn ($query) => $query->where('status', $this->statusFilter))
+            ->orderBy('name')
+            ->paginate(10);
+
         return view('livewire.admin.inventory.items', [
-            'items' => InventoryItem::query()
-                ->withCount(['loans as borrowed_count' => fn ($query) => $query->where('status', 'loaned')])
-                ->search($this->search)
-                ->when($this->statusFilter, fn ($query) => $query->where('status', $this->statusFilter))
-                ->orderBy('name')
-                ->paginate(10),
+            'items' => $items,
             'statuses' => InventoryItem::statuses(),
             'summary' => [
                 'total' => InventoryItem::count(),
