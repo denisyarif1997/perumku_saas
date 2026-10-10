@@ -1,5 +1,7 @@
 <div class="space-y-6">
 
+    <x-pwa-install />
+
     {{-- HERO SALAM --}}
     <div class="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-teal-600 to-teal-800 p-6 text-white shadow-xl shadow-teal-900/20">
         {{-- Dekorasi playful ala clay 3D --}}

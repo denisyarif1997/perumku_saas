@@ -86,3 +86,16 @@ document.addEventListener('livewire:navigated', () => {
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
     if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches);
 });
+
+/* =========================================================
+ * PWA: daftarkan service worker agar syarat "Install App"
+ * Chrome (manifest + SW + icon) terpenuhi.
+ * ========================================================= */
+if ('serviceWorker' in navigator && !window.__perumkuSwRegistered) {
+    window.__perumkuSwRegistered = true;
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((error) => {
+            console.error('[pwa] gagal mendaftarkan service worker:', error);
+        });
+    });
+}
