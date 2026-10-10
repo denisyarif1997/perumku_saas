@@ -104,12 +104,10 @@ class Show extends Component
      * Pilih atau lepas satu pilihan polling saat warga menekan radio/checkbox.
      *
      * Nilai dikirim lewat aksi, bukan wire:model, karena Livewire mengirim
-     * nilai radio sebagai string (lihat getInputValue di livewire.esm.js) dan
-     * checkbox hanya mengirim array bila nilai server sudah berupa array.
-     * Keduanya tidak bisa masuk ke properti $selectedOptions bertipe array.
-     *
-     * Status centang digambar ulang dari $selectedOptions, jadi server yang
-     * tetap menjadi sumber kebenaran.
+     * nilai radio sebagai string dan checkbox hanya mengirim array bila nilai
+     * server sudah berupa array — keduanya tidak bisa masuk ke properti
+     * $selectedOptions bertipe array. Status centang digambar ulang dari
+     * $selectedOptions, jadi server tetap sumber kebenaran.
      */
     public function selectOption(string $optionKey): void
     {

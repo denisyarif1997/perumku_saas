@@ -535,17 +535,28 @@ class RbacTest extends TestCase
             ->call('toggleStatus', $admin->id)
             ->assertSee('akun sendiri');
 
-        // Super admin aktif terakhir tidak boleh diturunkan rolenya oleh admin lain.
-        // Akun ini tingkat platform (tanpa estate), karena yang dilindungi adalah
-        // akun super_admin global, bukan akun milik sebuah perumahan.
-        $admin2 = User::factory()->withoutEstate()->create(['role_id' => Role::where('slug', 'admin')->firstOrFail()->id, 'status' => 'active']);
+        // Super admin aktif terakhir tidak boleh diturunkan rolenya.
+        // $admin2 memang ditolak lebih dulu oleh proteksi Role & Akses
+        // (bukan super admin), jadi gunakan sesama super admin agar
+        // sampai ke proteksi "aktif terakhir".
+        $admin2 = User::factory()->withoutEstate()->create(['role_id' => Role::where('slug', 'super_admin')->firstOrFail()->id, 'status' => 'active']);
+
+        Livewire::actingAs($admin)
+            ->test(UserIndex::class)
+            ->call('changeRole', $admin->id, $other->role_id)
+            ->assertSee('Tidak bisa mengubah role akun sendiri');
+
+        // Skenario asli: super admin lain mencoba menurunkan satu-satunya
+        // super admin aktif -> proteksi "aktif terakhir" yang menolak.
+        $loneAdmin = User::factory()->withoutEstate()->create(['role_id' => Role::where('slug', 'super_admin')->firstOrFail()->id, 'status' => 'active']);
+        User::whereRelation('role', 'slug', 'super_admin')->whereKeyNot($loneAdmin->id)->delete();
 
         Livewire::actingAs($admin2)
             ->test(UserIndex::class)
-            ->call('changeRole', $admin->id, $other->role_id)
+            ->call('changeRole', $loneAdmin->id, $other->role_id)
             ->assertSee('Super Admin aktif terakhir tidak boleh diubah rolenya');
 
-        $this->assertSame('super_admin', $admin->fresh()->role->slug);
+        $this->assertSame('super_admin', $loneAdmin->fresh()->role->slug);
     }
 
     public function test_user_without_manage_role_cannot_change_super_admin_role(): void
@@ -562,7 +573,7 @@ class RbacTest extends TestCase
         Livewire::actingAs($operator)
             ->test(UserIndex::class)
             ->call('changeRole', $superAdmin->id, $financeRole->id)
-            ->assertSee('Role Super Admin hanya bisa diubah', false);
+            ->assertSee('Hanya pengelola Role &amp; Akses', false);
 
         $this->assertSame('super_admin', $superAdmin->fresh()->role->slug);
     }

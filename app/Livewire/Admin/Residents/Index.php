@@ -3,10 +3,10 @@
 namespace App\Livewire\Admin\Residents;
 
 use App\Models\ActivityLog;
-use App\Models\CurrentEstate;
 use App\Models\HouseResident;
 use App\Models\Resident;
 use App\Models\User;
+use App\Support\CurrentEstate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;

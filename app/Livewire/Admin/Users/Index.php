@@ -15,16 +15,30 @@ class Index extends Component
     use WithPagination;
 
     public string $search = '';
+
     public string $roleFilter = '';
+
     public bool $showForm = false;
+
     public ?int $editingId = null;
+
     public string $name = '';
+
     public string $email = '';
+
     public string $phone = '';
+
     public string $role_id = '';
 
-    public function updatedSearch(): void { $this->resetPage(); }
-    public function updatedRoleFilter(): void { $this->resetPage(); }
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedRoleFilter(): void
+    {
+        $this->resetPage();
+    }
 
     public function mount(): void
     {
@@ -72,6 +86,7 @@ class Index extends Component
         // Kunci jika target user adalah Super Admin dan user yang login BUKAN Super Admin
         if ($user->role?->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
             session()->flash('error', 'Hanya Super Admin yang dapat mengubah data Super Admin.');
+
             return;
         }
 
@@ -116,6 +131,7 @@ class Index extends Component
         // PROTEKSI 1: Tolak jika mencoba menetapkan role Super Admin tapi user yang login bukan Super Admin
         if ($targetRole->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
             session()->flash('error', 'Hanya Super Admin yang dapat memberikan role Super Admin.');
+
             return;
         }
 
@@ -126,6 +142,7 @@ class Index extends Component
 
         if ($isUpdate && $user->role?->slug !== $targetRole->slug && $this->isLastActiveSuperAdmin($user)) {
             session()->flash('error', 'Super Admin aktif terakhir tidak boleh diubah rolenya.');
+
             return;
         }
 
@@ -157,23 +174,27 @@ class Index extends Component
 
         if ($user->id === auth()->id()) {
             session()->flash('error', 'Tidak bisa mengubah role akun sendiri.');
+
             return;
         }
 
         // PROTEKSI 2: Kunci agar Admin tidak bisa mengubah siapa pun jadi Super Admin
         if ($role->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
-            session()->flash('error', 'Hanya Super Admin yang dapat memberikan role Super Admin.');
+            session()->flash('error', 'Hanya pengelola Role & Akses yang dapat memberikan role Super Admin.');
+
             return;
         }
 
         // PROTEKSI 3: Kunci agar Admin tidak bisa mengubah role akun yang ber-role Super Admin
         if ($user->role?->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
-            session()->flash('error', 'Hanya Super Admin yang dapat mengubah role akun Super Admin.');
+            session()->flash('error', 'Hanya pengelola Role & Akses yang dapat mengubah role akun Super Admin.');
+
             return;
         }
 
         if ($user->role_id !== $role->id && $this->isLastActiveSuperAdmin($user)) {
             session()->flash('error', 'Super Admin aktif terakhir tidak boleh diubah rolenya.');
+
             return;
         }
 
@@ -199,16 +220,19 @@ class Index extends Component
 
         if ($user->id === auth()->id()) {
             session()->flash('error', 'Tidak bisa menonaktifkan akun sendiri.');
+
             return;
         }
 
         if ($user->role?->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
             session()->flash('error', 'Hanya Super Admin yang dapat mengubah status akun Super Admin.');
+
             return;
         }
 
         if ($user->status === 'active' && $this->isLastActiveSuperAdmin($user)) {
             session()->flash('error', 'Super Admin aktif terakhir tidak boleh dinonaktifkan.');
+
             return;
         }
 
@@ -222,6 +246,7 @@ class Index extends Component
 
         if ($user->role?->slug === 'super_admin' && ! $this->isSuperAdminUser()) {
             session()->flash('error', 'Hanya Super Admin yang dapat mereset password akun Super Admin.');
+
             return;
         }
 

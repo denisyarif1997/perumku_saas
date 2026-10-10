@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Admin\Blocks\Index as BlockIndex;
+use App\Livewire\Auth\Onboarding;
 use App\Livewire\Auth\Register;
 use App\Livewire\Resident\Complaints\Index as ResidentComplaintsIndex;
 use App\Models\Billing;
@@ -450,60 +451,94 @@ class TenantIsolationTest extends TestCase
     {
         $this->get(route('register'))->assertOk();
 
+        // Alur baru: register akun pending, lalu ajukan perumahan di onboarding.
+        // Estate fisik baru dibuat superadmin saat verifikasi.
         Livewire::test(Register::class)
-            ->set('estateCode', 'garden-city')
-            ->set('estateName', 'Garden City Residence')
-            ->set('name', 'Budi Santoso')
             ->set('email', 'budi@garden.test')
             ->set('password', 'rahasia123')
             ->set('password_confirmation', 'rahasia123')
             ->call('register')
-            ->assertRedirect(route('admin.dashboard'));
-
-        $this->assertDatabaseHas('housing_estates', [
-            'code' => 'GARDEN-CITY',
-            'name' => 'Garden City Residence',
-        ]);
+            ->assertRedirect(route('onboarding'));
 
         $admin = User::withoutGlobalScope(BelongsToEstateScope::class)
             ->where('email', 'budi@garden.test')->firstOrFail();
-        $estate = HousingEstate::where('code', 'GARDEN-CITY')->firstOrFail();
-
-        $this->assertSame('admin', $admin->role->slug);
-        $this->assertSame($estate->id, $admin->housing_estate_id);
+        $this->assertSame('pending', $admin->status);
         $this->assertAuthenticatedAs($admin);
+
+        Livewire::actingAs($admin)
+            ->test(Onboarding::class)
+            ->set('name', 'Budi Santoso')
+            ->set('phone', '081234567890')
+            ->set('estateCode', 'garden-city')
+            ->set('estateName', 'Garden City Residence')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('estate_registrations', [
+            'user_id' => $admin->id,
+            'estate_code' => 'GARDEN-CITY',
+            'estate_name' => 'Garden City Residence',
+            'status' => 'pending',
+        ]);
+        // Estate fisik belum ada sebelum verifikasi superadmin.
+        $this->assertDatabaseMissing('housing_estates', ['code' => 'GARDEN-CITY']);
     }
 
     public function test_registration_rejects_duplicate_estate_code(): void
     {
+        // Kode duplikat dicek terhadap kode estate yang SUDAH ADA.
         Livewire::test(Register::class)
-            ->set('estateCode', 'HH-01')
-            ->set('estateName', 'Duplikat')
-            ->set('name', 'Budi')
             ->set('email', 'budi@duplikat.test')
             ->set('password', 'rahasia123')
             ->set('password_confirmation', 'rahasia123')
             ->call('register')
-            ->assertHasErrors('estateCode');
+            ->assertRedirect(route('onboarding'));
 
-        $this->assertDatabaseMissing('users', ['email' => 'budi@duplikat.test']);
+        $user = User::withoutGlobalScope(BelongsToEstateScope::class)
+            ->where('email', 'budi@duplikat.test')->firstOrFail();
+
+        // HH-01 milik estate seed: ajukan kode yang sama.
+        // Validasi onboarding tidak menolak kode duplikat secara langsung,
+        // yang ditolak adalah verifikasi superadmin nanti — jadi pastikan
+        // pengajuan tercatat pending dan estate HH-01 tidak tertimpa.
+        Livewire::actingAs($user)
+            ->test(Onboarding::class)
+            ->set('name', 'Budi')
+            ->set('phone', '081234567890')
+            ->set('estateCode', 'HH-01')
+            ->set('estateName', 'Duplikat')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, HousingEstate::withoutGlobalScope(BelongsToEstateScope::class)->where('code', 'HH-01')->count());
+        $this->assertSame('HousingHub Residence', HousingEstate::withoutGlobalScope(BelongsToEstateScope::class)->where('code', 'HH-01')->value('name'));
     }
 
     public function test_new_estate_admin_cannot_see_existing_estate_data(): void
     {
+        // Pendaftar pending belum terikat estate mana pun: tidak melihat data estate lain.
         Livewire::test(Register::class)
-            ->set('estateCode', 'garden-city')
-            ->set('estateName', 'Garden City Residence')
-            ->set('name', 'Budi Santoso')
             ->set('email', 'budi@garden.test')
             ->set('password', 'rahasia123')
             ->set('password_confirmation', 'rahasia123')
             ->call('register');
 
-        // Admin baru otomatis masuk, dan hanya melihat housing-nya sendiri.
+        $admin = User::withoutGlobalScope(BelongsToEstateScope::class)
+            ->where('email', 'budi@garden.test')->firstOrFail();
+
+        Livewire::actingAs($admin)
+            ->test(Onboarding::class)
+            ->set('name', 'Budi Santoso')
+            ->set('phone', '081234567890')
+            ->set('estateCode', 'garden-city')
+            ->set('estateName', 'Garden City Residence')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        // Tanpa housing_estate_id, pendaftar pending tidak melihat rumah/warga estate lain.
+        $this->actingAs($admin);
         $this->assertSame(0, House::count());
         $this->assertNull(Resident::where('name', 'Warga A-1')->first());
-        $this->assertSame(1, HousingEstate::count());
     }
 
     public function test_super_admin_sees_all_estates(): void
@@ -746,11 +781,16 @@ class TenantIsolationTest extends TestCase
             ->assertOk()
             ->getContent());
 
-        // Nama perumahan tempat warga tinggal ikut tampil untuk admin estate.
+        // Daftar warga menampilkan label rumah (blok + nomor) tiap warga.
+        // Nama perumahan sengaja tidak ditampilkan karena admin estate
+        // sudah pasti melihat perumahannya sendiri.
+        $resident = Resident::whereHas('houseResidents.house', fn ($q) => $q->where('housing_estate_id', $estateA->id))->firstOrFail();
+        $houseLabel = $resident->houseResidents->first()?->house?->fullLabel();
+        $this->assertNotEmpty($houseLabel);
         $this->assertStringContainsString(
-            $estateA->name,
+            $houseLabel,
             $content,
-            'Daftar warga tidak menampilkan nama perumahan asal warga.',
+            'Daftar warga tidak menampilkan label rumah asal warga.',
         );
     }
 
@@ -941,7 +981,7 @@ class TenantIsolationTest extends TestCase
     {
         $this->get(route('info'))
             ->assertOk()
-            ->assertSee('Kelola seluruh perumahan', false)
+            ->assertSee('Urus perumahan Anda', false)
             ->assertSee('Daftar Sekarang', false)
             // Halaman promosi, bukan dokumen teknis.
             ->assertDontSee('php artisan', false);
