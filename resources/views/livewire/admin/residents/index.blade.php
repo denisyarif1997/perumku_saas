@@ -9,6 +9,9 @@
             <button type="button" wire:click="export" class="flex min-h-[48px] items-center gap-2 rounded-2xl border border-[#0F172A] bg-white px-4 font-semibold text-[#0F172A]">
                 <i data-lucide="download" class="h-4 w-4"></i><span class="hidden sm:inline">Export</span>
             </button>
+            <a href="{{ route('admin.residents.invitations') }}" wire:navigate class="flex min-h-[48px] items-center gap-2 rounded-2xl border border-teal-700 bg-teal-50 px-4 font-semibold text-teal-800">
+                <i data-lucide="send" class="h-4 w-4"></i><span class="hidden sm:inline">Undang</span>
+            </a>
             <a href="{{ route('admin.residents.create') }}" wire:navigate class="flex min-h-[48px] items-center gap-2 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-700 shadow-lg shadow-teal-700/30 px-4 font-semibold text-white">
                 <i data-lucide="plus" class="h-5 w-5"></i><span class="hidden sm:inline">Tambah</span>
             </a>

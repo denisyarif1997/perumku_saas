@@ -25,11 +25,13 @@ use App\Livewire\Admin\Ipl\Payments\Index as PaymentIndex;
 use App\Livewire\Admin\Ipl\Rates\Index as IplRateIndex;
 use App\Livewire\Admin\Residents\Form as ResidentForm;
 use App\Livewire\Admin\Residents\Index as ResidentIndex;
+use App\Livewire\Admin\Residents\Invitations as ResidentInvitations;
 use App\Livewire\Admin\Roles\Index as RoleIndex;
 use App\Livewire\Admin\Users\Index as UserIndex;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Onboarding;
 use App\Livewire\Auth\Register;
+use App\Livewire\Invite\Show as InviteShow;
 use App\Livewire\Platform\Dashboard as PlatformDashboard;
 use App\Livewire\Platform\Registrations as PlatformRegistrations;
 use App\Livewire\Resident\Cash\Index as ResidentCashIndex;
@@ -58,6 +60,9 @@ Route::middleware('guest')->group(function () {
 
     // Halaman promosi aplikasi, publik dan tanpa perlu masuk.
     Route::view('/info', 'marketing.info')->name('info');
+
+    // Terima undangan warga (link bertoken, tanpa login, tanpa SMTP).
+    Route::get('/invite/{token}', InviteShow::class)->name('invite.show');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -114,6 +119,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/houses/create', HouseForm::class)->name('houses.create')->middleware('permission:manage-houses');
         Route::get('/houses/{house}/edit', HouseForm::class)->name('houses.edit')->middleware('permission:manage-houses');
         Route::get('/residents', ResidentIndex::class)->name('residents.index')->middleware('permission:manage-residents');
+        Route::get('/residents/invitations', ResidentInvitations::class)->name('residents.invitations')->middleware('permission:manage-residents');
         Route::get('/residents/create', ResidentForm::class)->name('residents.create')->middleware('permission:manage-residents');
         Route::get('/residents/{resident}/edit', ResidentForm::class)->name('residents.edit')->middleware('permission:manage-residents');
         Route::get('/users', UserIndex::class)->name('users.index')->middleware('permission:manage-user');
