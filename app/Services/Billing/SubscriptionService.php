@@ -97,56 +97,55 @@ class SubscriptionService
     }
 
     /**
-     * Validasi sebelum user baru dibuat/diaktifkan di estate ini.
-     * Melempar RuntimeException bila kuota habis dan overage belum dibayar.
+     * Total user overage yang sudah dibayar untuk periode berjalan: jumlah
+     * overage_users pada invoice overage berstatus paid yang periodenya belum
+     * berakhir. Menentukan kuota berbayar di luar paket inklusif.
      */
-    public function assertCanAddUser(int|HousingEstate $estate): void
-    {
-        $subscription = $this->forEstate($estate);
-        $included = (int) ($subscription?->included_users ?? $this->includedUsers());
-        $count = $this->activeUserCount($estate);
-
-        if ($count < $included) {
-            return;
-        }
-
-        $overage = max(0, ($count + 1) - $included);
-        $estateId = $estate instanceof HousingEstate ? $estate->id : $estate;
-        $pending = EstateSubscriptionInvoice::query()
-            ->where('housing_estate_id', $estateId)
-            ->where('type', 'overage')
-            ->whereIn('status', ['pending', 'failed', 'expired'])
-            ->exists();
-
-        if ($pending || ! $this->overageBillSettled($estate)) {
-            throw new RuntimeException(
-                "Kuota {$included} user tercapai ({$count} aktif). ".
-                "Bayar biaya tambahan untuk {$overage} user kelebihan ".
-                '(Rp'.number_format($this->overagePerUser(), 0, ',', '.').'/user/bulan) '.
-                'melalui halaman Langganan sebelum menambah user baru.'
-            );
-        }
-    }
-
-    /** Overage lunas bila ada invoice overage paid yang mencakup kelebihan kini. */
-    public function overageBillSettled(int|HousingEstate $estate): bool
+    public function paidOverageUsers(int|HousingEstate $estate): int
     {
         $estateId = $estate instanceof HousingEstate ? $estate->id : $estate;
-        $overage = $this->overageUsers($estate);
 
-        if ($overage <= 0) {
-            return true;
-        }
-
-        return EstateSubscriptionInvoice::query()
+        return (int) EstateSubscriptionInvoice::query()->withoutGlobalScopes()
             ->where('housing_estate_id', $estateId)
             ->where('type', 'overage')
             ->where('status', 'paid')
-            ->where('overage_users', '>=', $overage)
             ->where(function ($q) {
                 $q->whereNull('period_end')->orWhereDate('period_end', '>=', now()->toDateString());
             })
-            ->exists();
+            ->sum('overage_users');
+    }
+
+    /** Kuota berbayar total periode berjalan: paket inklusif + overage lunas. */
+    protected function authorizedCapacity(int|HousingEstate $estate): int
+    {
+        $subscription = $this->forEstate($estate);
+        $included = (int) ($subscription?->included_users ?? $this->includedUsers());
+
+        return $included + $this->paidOverageUsers($estate);
+    }
+
+    /**
+     * Validasi sebelum user baru dibuat/diaktifkan di estate ini.
+     * Melempar RuntimeException bila kapasitas berbayar (paket inklusif +
+     * overage lunas) sudah habis.
+     */
+    public function assertCanAddUser(int|HousingEstate $estate): void
+    {
+        $count = $this->activeUserCount($estate);
+        $capacity = $this->authorizedCapacity($estate);
+
+        if ($count < $capacity) {
+            return;
+        }
+
+        $overage = ($count + 1) - $capacity;
+
+        throw new RuntimeException(
+            "Kuota {$capacity} user tercapai ({$count} aktif). ".
+            "Bayar biaya tambahan untuk {$overage} user kelebihan ".
+            '(Rp'.number_format($this->overagePerUser(), 0, ',', '.').'/user/bulan) '.
+            'melalui halaman Langganan sebelum menambah user baru.'
+        );
     }
 
     /** Buat (atau ambil) invoice paket bulanan periode berjalan. Idempotent. */
@@ -186,15 +185,22 @@ class SubscriptionService
         ]));
     }
 
-    /** Buat invoice overage untuk kelebihan user saat ini. */
+    /**
+     * Buat invoice overage untuk menambah kapasitas user periode berjalan.
+     * Menagih kelebihan prospektif (user berikutnya di luar kapasitas berbayar),
+     * sehingga tidak deadlock saat jumlah user persis sama dengan kuota inklusif.
+     */
     public function createOverageInvoice(HousingEstate $estate): EstateSubscriptionInvoice
     {
         $subscription = $this->forEstate($estate) ?? $this->startTrial($estate);
-        $overage = $this->overageUsers($estate);
+        $count = $this->activeUserCount($estate);
+        $capacity = $this->authorizedCapacity($estate);
 
-        if ($overage <= 0) {
-            throw new RuntimeException('Tidak ada kelebihan user untuk ditagih.');
+        if ($count < $capacity) {
+            throw new RuntimeException('Kuota user masih mencukupi; tidak ada kelebihan untuk ditagih.');
         }
+
+        $overage = ($count + 1) - $capacity;
 
         $start = now()->startOfMonth();
         $end = now()->endOfMonth();

@@ -63,14 +63,6 @@
                 @endforeach
             @endforeach
 
-            @if ($residentAreaRoute)
-                <div class="border-t border-[#EEF2F1] pt-3">
-                    <a href="{{ route($residentAreaRoute) }}" wire:navigate
-                        class="{{ $navLink }} bg-teal-50 font-semibold text-teal-800 hover:bg-teal-100">
-                        <i data-lucide="user-round" class="h-4 w-4"></i> Beralih ke Tampilan Warga
-                    </a>
-                </div>
-            @endif
         </nav>
     </aside>
 
@@ -103,14 +95,6 @@
                     @endforeach
                 @endforeach
 
-                @if ($residentAreaRoute)
-                    <div class="border-t border-[#EEF2F1] pt-3">
-                        <a href="{{ route($residentAreaRoute) }}" wire:navigate @click="sidebar=false"
-                            class="flex items-center gap-3 rounded-xl bg-teal-50 px-3 py-2.5 font-semibold text-teal-800 transition hover:bg-teal-100">
-                            <i data-lucide="user-round" class="h-4 w-4"></i> Beralih ke Tampilan Warga
-                        </a>
-                    </div>
-                @endif
             </nav>
         </aside>
     </div>
@@ -121,6 +105,13 @@
                 <h1 class="flex-1 truncate text-lg font-bold">{{ $title }}</h1>
                 <div class="flex items-center gap-2">
                     <livewire:notifications variant="admin" />
+                    @if ($residentAreaRoute)
+                        <a href="{{ route($residentAreaRoute) }}" wire:navigate
+                            title="Beralih ke Tampilan Warga" aria-label="Beralih ke Tampilan Warga"
+                            class="flex h-11 w-11 items-center justify-center rounded-xl border border-[#E2E8F0] transition hover:bg-slate-100">
+                            <i data-lucide="user-round" class="h-5 w-5"></i>
+                        </a>
+                    @endif
                     <button type="button" data-theme-toggle
                         class="flex h-11 w-11 items-center justify-center rounded-xl border border-[#E2E8F0] transition hover:bg-slate-100"
                         aria-label="Ganti tema">

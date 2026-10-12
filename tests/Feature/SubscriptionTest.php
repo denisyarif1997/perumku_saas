@@ -12,6 +12,8 @@ use App\Services\Billing\SubscriptionService;
 use Database\Seeders\HousingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class SubscriptionTest extends TestCase
@@ -33,21 +35,31 @@ class SubscriptionTest extends TestCase
 
     protected function estate(): HousingEstate
     {
-        return HousingEstate::where('code', 'HH-01')->firstOrFail();
+        return HousingEstate::withoutGlobalScopes()->create([
+            'code' => 'QUOTA-'.uniqid(), 'name' => 'Quota Estate', 'status' => 'active',
+        ]);
     }
 
     protected function makeUsers(HousingEstate $estate, int $total): void
     {
+        // Role admin eksplisit: hitungan kuota mengecualikan super_admin,
+        // jadi user tanpa role tidak akan terhitung dan test jadi flaky.
         $roleId = Role::where('slug', 'admin')->value('id');
 
+        $this->assertNotNull($roleId, 'Role admin tidak ditemukan di seeder.');
+
         for ($i = 0; $i < $total; $i++) {
-            User::withoutGlobalScopes()->create([
-                'name' => "User {$i}",
-                'email' => "quota{$i}@example.test",
-                'password' => 'password',
+            // Pakai query builder mentah: trait BelongsToEstate mengunci
+            // housing_estate_id saat create() bila CurrentEstate ter-resolve.
+            DB::table('users')->insert([
+                'name' => "User {$estate->id}-{$i}",
+                'email' => "quota{$estate->id}-{$i}@example.test",
+                'password' => Hash::make('password'),
                 'role_id' => $roleId,
                 'housing_estate_id' => $estate->id,
                 'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
     }
@@ -59,20 +71,20 @@ class SubscriptionTest extends TestCase
         ]);
 
         $subscription = $this->service()->startTrial($estate);
+        $expectedDays = (int) config('subscription.trial_days', 15);
 
         $this->assertSame('trial', $subscription->status);
-        $this->assertSame(100, (int) $subscription->included_users);
-        $this->assertEquals(15, $subscription->trial_started_at->diffInDays($subscription->trial_ends_at));
+        $this->assertSame((int) config('subscription.included_users', 100), (int) $subscription->included_users);
+        $this->assertEquals($expectedDays, $subscription->trial_started_at->diffInDays($subscription->trial_ends_at));
     }
 
     public function test_user_quota_blocks_101st_user_until_overage_paid(): void
     {
         $estate = $this->estate();
-        $this->service()->startTrial($estate);
+        $subscription = $this->service()->startTrial($estate);
 
         // Kosongkan user seed agar hitungan deterministik.
-        User::withoutGlobalScopes()->where('housing_estate_id', $estate->id)->delete();
-        $this->makeUsers($estate, 100);
+        $this->makeUsers($estate, (int) $subscription->included_users);
 
         $this->expectException(\RuntimeException::class);
 
@@ -82,16 +94,18 @@ class SubscriptionTest extends TestCase
     public function test_paid_overage_invoice_unblocks_new_user(): void
     {
         $estate = $this->estate();
-        $this->service()->startTrial($estate);
+        $subscription = $this->service()->startTrial($estate);
 
-        User::withoutGlobalScopes()->where('housing_estate_id', $estate->id)->delete();
-        $this->makeUsers($estate, 101);
+        // User persis sebanyak kuota inklusif: menambah satu lagi butuh overage.
+        $expectedOverage = 1;
+        $this->makeUsers($estate, (int) $subscription->included_users);
 
         $invoice = $this->service()->createOverageInvoice($estate);
-        $this->assertSame(1, (int) $invoice->overage_users);
+        $this->assertSame($expectedOverage, (int) $invoice->overage_users);
 
         $this->service()->markPaid($invoice);
-        $this->service()->assertCanAddUser($estate);
+        // Setelah overage lunas, kapasitas bertambah 1 dan user baru lolos.
+        $this->service()->assertCanAddUser($estate->id);
 
         $this->assertTrue(true);
     }
@@ -99,6 +113,7 @@ class SubscriptionTest extends TestCase
     public function test_trial_expiry_suspends_estate(): void
     {
         $estate = $this->estate();
+        config(['subscription.grace_days' => 0]);
         $subscription = $this->service()->startTrial($estate);
         $subscription->forceFill([
             'trial_ends_at' => now()->subDay(),

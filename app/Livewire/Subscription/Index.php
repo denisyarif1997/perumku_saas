@@ -65,6 +65,15 @@ class Index extends Component
             return;
         }
 
+        // Snap hanya mengizinkan satu transaksi per order_id; bila sesi bayar
+        // (redirect_url) sudah dibuat untuk invoice ini dan masih pending,
+        // gunakan kembali agar tidak ditolak "order_id sudah digunakan".
+        if ($invoice->status === 'pending' && ! empty($invoice->payment_url)) {
+            $this->redirect($invoice->payment_url, navigate: false);
+
+            return;
+        }
+
         $gateway = GatewayFactory::make($invoice->gateway);
         $result = $gateway->createPayment($invoice);
 
@@ -116,13 +125,18 @@ class Index extends Component
 
         $activeUsers = $service->activeUserCount($estate);
         $included = (int) $subscription->included_users;
+        // Kapasitas berbayar = inklusif + overage lunas; overage yang ditagih
+        // adalah user berikutnya di luar kapasitas (konsisten dengan
+        // createOverageInvoice). Tombol bayar tampil tepat saat diblokir.
+        $capacity = $included + $service->paidOverageUsers($estate);
+        $overage = $activeUsers >= $capacity ? ($activeUsers + 1) - $capacity : 0;
 
         return view('livewire.subscription.index', [
             'estate' => $estate,
             'subscription' => $subscription,
             'activeUsers' => $activeUsers,
             'included' => $included,
-            'overage' => max(0, $activeUsers - $included),
+            'overage' => $overage,
             'daysLeft' => $subscription->trialDaysLeft(),
             'monthlyPrice' => $service->monthlyPrice(),
             'overagePerUser' => $service->overagePerUser(),

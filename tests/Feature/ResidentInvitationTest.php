@@ -6,6 +6,7 @@ use App\Livewire\Admin\Residents\Invitations;
 use App\Livewire\Invite\Show;
 use App\Models\House;
 use App\Models\ResidentInvitation;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\ResidentInvitationService;
 use Database\Seeders\HousingSeeder;
@@ -26,13 +27,24 @@ class ResidentInvitationTest extends TestCase
         $this->seed(HousingSeeder::class);
     }
 
+    /**
+     * Admin operasional terikat estate. Akun admin@housinghub.id dari seeder
+     * adalah super_admin platform (CurrentEstate::id() selalu null), jadi tidak
+     * bisa dipakai untuk fitur yang bergantung pada konteks estate.
+     */
     protected function estateAdmin(): User
     {
-        $admin = User::where('email', 'admin@housinghub.id')->firstOrFail();
         $estateId = House::firstOrFail()->housing_estate_id;
-        $admin->forceFill(['housing_estate_id' => $estateId])->save();
+        $roleId = Role::where('slug', 'admin')->firstOrFail()->id;
 
-        return $admin->fresh();
+        return User::create([
+            'name' => 'Estate Admin',
+            'email' => 'admin.invite@housinghub.test',
+            'password' => 'password',
+            'role_id' => $roleId,
+            'housing_estate_id' => $estateId,
+            'status' => 'active',
+        ]);
     }
 
     public function test_admin_can_create_invitation_with_wa_link(): void
@@ -59,6 +71,7 @@ class ResidentInvitationTest extends TestCase
     {
         $admin = $this->estateAdmin();
         $house = House::firstOrFail();
+        $this->actingAs($admin);
 
         $token = null;
         Livewire::actingAs($admin)
@@ -92,6 +105,7 @@ class ResidentInvitationTest extends TestCase
     {
         $admin = $this->estateAdmin();
         $house = House::firstOrFail();
+        $this->actingAs($admin);
 
         $service = app(ResidentInvitationService::class);
         $result = $service->create($admin, ['name' => 'Budi', 'house_id' => $house->id]);
