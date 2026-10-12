@@ -5,6 +5,8 @@ namespace App\Livewire\Admin\Users;
 use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Billing\SubscriptionService;
+use App\Support\CurrentEstate;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -135,6 +137,21 @@ class Index extends Component
             return;
         }
 
+        // Kuota paket: maks 100 user aktif per perumahan, kelebihan berbayar.
+        if (! $isUpdate) {
+            $estateId = CurrentEstate::id();
+
+            if ($estateId !== null && $estateId !== CurrentEstate::NONE) {
+                try {
+                    app(SubscriptionService::class)->assertCanAddUser($estateId);
+                } catch (\RuntimeException $e) {
+                    session()->flash('error', $e->getMessage());
+
+                    return;
+                }
+            }
+        }
+
         if (! $isUpdate) {
             $data['password'] = Hash::make('password123');
             $data['status'] = 'active';
@@ -234,6 +251,17 @@ class Index extends Component
             session()->flash('error', 'Super Admin aktif terakhir tidak boleh dinonaktifkan.');
 
             return;
+        }
+
+        // Aktivasi ulang user dihitung ke kuota paket perumahan.
+        if ($user->status !== 'active' && $user->housing_estate_id) {
+            try {
+                app(SubscriptionService::class)->assertCanAddUser((int) $user->housing_estate_id);
+            } catch (\RuntimeException $e) {
+                session()->flash('error', $e->getMessage());
+
+                return;
+            }
         }
 
         $user->update(['status' => $user->status === 'active' ? 'inactive' : 'active']);

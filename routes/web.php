@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\PaymentProofController;
+use App\Http\Controllers\SubscriptionWebhookController;
 use App\Livewire\Admin\ActivityLogs\Index as ActivityLogIndex;
 use App\Livewire\Admin\Blocks\Index as BlockIndex;
 use App\Livewire\Admin\Cash\Accounts\Index as CashAccountIndex;
@@ -44,6 +45,7 @@ use App\Livewire\Resident\Inventory\Index as ResidentInventoryIndex;
 use App\Livewire\Resident\Ipl\Index as ResidentIplIndex;
 use App\Livewire\Resident\Ipl\Show as ResidentIplShow;
 use App\Livewire\Resident\Profile as ResidentProfile;
+use App\Livewire\Subscription\Index as SubscriptionIndex;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('login'));
@@ -62,10 +64,21 @@ Route::middleware(['auth'])->group(function () {
     // Pendaftar pending melengkapi data diri + perumahan (tanpa middleware
     // active agar akun pending bisa login dan mengisi onboarding).
     Route::get('/onboarding', Onboarding::class)->name('onboarding');
+    // Webhook pembayaran langganan SaaS (tanpa auth, verifikasi signature di controller).
+    Route::post('/webhooks/subscription/{gateway}', [SubscriptionWebhookController::class, 'handle'])
+        ->name('subscription-webhook')->withoutMiddleware(['auth', 'active']);
 });
 
 Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Halaman langganan perumahan: tanpa permission manage-subscription agar
+    // tetap bisa dibuka saat middleware subscription mengunci area lain
+    // (mis. admin non-finance). Aksi bayar tetap dicek permission di komponen.
+    Route::prefix('subscription')->name('subscription.')->group(function () {
+        Route::get('/', SubscriptionIndex::class)->name('index');
+        Route::get('/finish/{invoice}', SubscriptionIndex::class)->name('finish');
+    });
 
     // Bukti bayar (BLOB database, maks 2 MB). Otorisasi dicek di controller via PaymentPolicy.
     Route::get('/payments/{payment}/proof', [PaymentProofController::class, 'show'])->name('payments.proof');
@@ -77,7 +90,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/registrations', PlatformRegistrations::class)->name('registrations');
     });
 
-    Route::prefix('resident')->name('resident.')->group(function () {
+    Route::prefix('resident')->name('resident.')->middleware('subscription')->group(function () {
         Route::get('/dashboard', ResidentDashboard::class)->name('dashboard');
         Route::get('/ipl', ResidentIplIndex::class)->name('ipl.index');
         Route::get('/ipl/{billing}', ResidentIplShow::class)->name('ipl.show');
@@ -93,7 +106,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/profile', ResidentProfile::class)->name('profile');
     });
 
-    Route::prefix('admin')->name('admin.')->middleware('permission:access-admin')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware(['permission:access-admin', 'subscription'])->group(function () {
         Route::get('/dashboard', AdminDashboard::class)->name('dashboard')->middleware('permission:view-dashboard');
         Route::get('/housing-estates', EstateIndex::class)->name('estates.index')->middleware('permission:manage-houses');
         Route::get('/blocks', BlockIndex::class)->name('blocks.index')->middleware('permission:manage-houses');

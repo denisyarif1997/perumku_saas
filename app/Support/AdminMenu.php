@@ -53,6 +53,7 @@ class AdminMenu
                 ['admin.users.index', 'user-cog', 'User', 'admin.users.*', ['menu-users'], ['manage-user']],
                 ['admin.roles.index', 'shield-check', 'Role & Akses', 'admin.roles.*', ['menu-roles'], ['manage-role']],
                 ['admin.activity-logs.index', 'history', 'Log Aktivitas', 'admin.activity-logs.*', ['menu-activity-logs'], ['view-activity-log']],
+                ['subscription.index', 'credit-card', 'Langganan', 'subscription.*', ['menu-subscription'], ['manage-subscription']],
             ]],
         ];
     }

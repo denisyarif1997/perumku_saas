@@ -11,6 +11,7 @@ use App\Models\OAuthAccount;
 use App\Models\Resident;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Billing\SubscriptionService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -135,6 +136,9 @@ class EstateRegistrationService
                 'decided_by' => $decider->id,
                 'decided_at' => now(),
             ])->save();
+
+            // Perumahan baru langsung masuk trial 15 hari + kuota 100 user.
+            app(SubscriptionService::class)->startTrial($estate);
 
             return ['estate' => $estate, 'user' => $user->fresh()];
         });

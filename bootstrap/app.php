@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\EnsureSubscriptionActive;
 use App\Http\Middleware\TrackPageVisit;
 use App\Support\AdminMenu;
 use Illuminate\Foundation\Application;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureActiveUser::class,
             'role' => EnsureRole::class,
             'permission' => EnsurePermission::class,
+            'subscription' => EnsureSubscriptionActive::class,
         ]);
 
         // Hosting (cPanel/Nginx/Cloudflare) umumnya jalan di balik proxy:

@@ -31,6 +31,8 @@ class RolePermissionSeeder extends Seeder
             'general' => ['view-dashboard', 'access-admin'],
             'master' => ['manage-houses', 'manage-residents'],
             'billing' => ['manage-billing', 'manage-payment', 'verify-payment'],
+            // Langganan SaaS perumahan (trial, kuota user, invoice paket/overage).
+            'subscription' => ['manage-subscription'],
             'communication' => ['manage-announcement', 'manage-event', 'manage-forum'],
             'service' => ['manage-complaint', 'manage-administration', 'manage-facility', 'manage-booking'],
             'marketplace' => ['manage-marketplace'],
@@ -53,6 +55,7 @@ class RolePermissionSeeder extends Seeder
             'manage-visitor' => 'Kelola Tamu', 'manage-vehicle' => 'Kelola Kendaraan',
             'manage-package' => 'Kelola Paket', 'manage-emergency' => 'Kelola Emergency',
             'manage-finance' => 'Kelola Keuangan',
+            'manage-subscription' => 'Kelola Langganan',
             'manage-inventory' => 'Kelola Inventaris',
             'manage-user' => 'Kelola User', 'manage-role' => 'Kelola Role', 'view-activity-log' => 'Lihat Activity Log',
         ];
@@ -92,6 +95,7 @@ class RolePermissionSeeder extends Seeder
             'menu-roles' => ['manage-role'],
             'menu-activity-logs' => ['view-activity-log'],
             'menu-registrations' => [],
+            'menu-subscription' => ['manage-subscription'],
         ];
 
         $menuLabels = [
@@ -116,6 +120,7 @@ class RolePermissionSeeder extends Seeder
             'menu-roles' => 'Menu: Role & Akses',
             'menu-activity-logs' => 'Menu: Log Aktivitas',
             'menu-registrations' => 'Menu: Verifikasi Perumahan',
+            'menu-subscription' => 'Menu: Langganan',
         ];
 
         foreach ($menuMap as $slug => $actionSlugs) {

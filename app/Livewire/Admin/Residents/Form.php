@@ -8,11 +8,13 @@ use App\Models\HouseResident;
 use App\Models\Resident;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Billing\SubscriptionService;
+use App\Support\CurrentEstate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Illuminate\Validation\Rule;
 
 class Form extends Component
 {
@@ -55,105 +57,118 @@ class Form extends Component
     }
 
     public function save()
-{
-    $data = $this->validate([
-        'name' => ['required', 'string', 'max:100'],
-        // Mengabaikan pengecekan NIK unik milik warga yang sedang di-edit
-        'nik' => [
-            'nullable', 
-            'string', 
-            'max:20', 
-            Rule::unique('residents', 'nik')->ignore($this->resident?->id)
-        ],
-        'gender' => ['required', 'in:male,female'],
-        'birth_date' => ['nullable', 'date'],
-        'phone' => ['nullable', 'string', 'max:20'],
-        // Cek email unik di tabel residents & tabel users (diabaikan jika milik warga ini sendiri)
-        'email' => [
-            'nullable', 
-            'email', 
-            'max:100', 
-            Rule::unique('residents', 'email')->ignore($this->resident?->id),
-            Rule::unique('users', 'email')->ignore($this->resident?->user?->id)
-        ],
-        'house_id' => ['required', 'exists:houses,id'],
-        'relationship' => ['required', 'string', 'max:30'],
-    ], [
-        'name.required' => 'Nama wajib diisi.',
-        'house_id.required' => 'Rumah wajib dipilih.',
-        'email.unique' => 'Email sudah terdaftar dalam sistem.',
-        'nik.unique' => 'NIK sudah terdaftar dalam sistem.',
-    ]);
+    {
+        $data = $this->validate([
+            'name' => ['required', 'string', 'max:100'],
+            // Mengabaikan pengecekan NIK unik milik warga yang sedang di-edit
+            'nik' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('residents', 'nik')->ignore($this->resident?->id),
+            ],
+            'gender' => ['required', 'in:male,female'],
+            'birth_date' => ['nullable', 'date'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            // Cek email unik di tabel residents & tabel users (diabaikan jika milik warga ini sendiri)
+            'email' => [
+                'nullable',
+                'email',
+                'max:100',
+                Rule::unique('residents', 'email')->ignore($this->resident?->id),
+                Rule::unique('users', 'email')->ignore($this->resident?->user?->id),
+            ],
+            'house_id' => ['required', 'exists:houses,id'],
+            'relationship' => ['required', 'string', 'max:30'],
+        ], [
+            'name.required' => 'Nama wajib diisi.',
+            'house_id.required' => 'Rumah wajib dipilih.',
+            'email.unique' => 'Email sudah terdaftar dalam sistem.',
+            'nik.unique' => 'NIK sudah terdaftar dalam sistem.',
+        ]);
 
-    DB::transaction(function () use ($data) {
-        if ($this->resident) {
-            $this->resident->update([
-                'name' => $data['name'], 
-                'nik' => $data['nik'] ?: null, 
-                'gender' => $data['gender'],
-                'birth_date' => $data['birth_date'] ?: null, 
-                'phone' => $data['phone'] ?: null,
-                'email' => $data['email'] ?: null,
-            ]);
-            $resident = $this->resident;
+        DB::transaction(function () use ($data) {
+            if ($this->resident) {
+                $this->resident->update([
+                    'name' => $data['name'],
+                    'nik' => $data['nik'] ?: null,
+                    'gender' => $data['gender'],
+                    'birth_date' => $data['birth_date'] ?: null,
+                    'phone' => $data['phone'] ?: null,
+                    'email' => $data['email'] ?: null,
+                ]);
+                $resident = $this->resident;
 
-            // Jika user account sudah ada untuk warga ini, update juga email di tabel users
-            if ($resident->user && $data['email']) {
-                $resident->user->update(['email' => $data['email']]);
+                // Jika user account sudah ada untuk warga ini, update juga email di tabel users
+                if ($resident->user && $data['email']) {
+                    $resident->user->update(['email' => $data['email']]);
+                }
+
+                ActivityLog::record([
+                    'user_id' => auth()->id(),
+                    'action' => 'update',
+                    'module' => 'residents',
+                    'subject_type' => Resident::class,
+                    'subject_id' => $resident->id,
+                    'description' => 'Mengubah warga '.$resident->name,
+                ]);
+            } else {
+                $resident = Resident::create([
+                    'name' => $data['name'],
+                    'nik' => $data['nik'] ?: null,
+                    'gender' => $data['gender'],
+                    'birth_date' => $data['birth_date'] ?: null,
+                    'phone' => $data['phone'] ?: null,
+                    'email' => $data['email'] ?: null,
+                    'status' => 'active',
+                ]);
+
+                ActivityLog::record([
+                    'user_id' => auth()->id(),
+                    'action' => 'create',
+                    'module' => 'residents',
+                    'subject_type' => Resident::class,
+                    'subject_id' => $resident->id,
+                    'description' => 'Menambah warga '.$resident->name,
+                ]);
             }
 
-            ActivityLog::record([
-                'user_id' => auth()->id(), 
-                'action' => 'update', 
-                'module' => 'residents',
-                'subject_type' => Resident::class, 
-                'subject_id' => $resident->id,
-                'description' => 'Mengubah warga '.$resident->name,
-            ]);
-        } else {
-            $resident = Resident::create([
-                'name' => $data['name'], 
-                'nik' => $data['nik'] ?: null, 
-                'gender' => $data['gender'],
-                'birth_date' => $data['birth_date'] ?: null, 
-                'phone' => $data['phone'] ?: null,
-                'email' => $data['email'] ?: null, 
-                'status' => 'active',
-            ]);
+            HouseResident::where('resident_id', $resident->id)->where('status', 'active')->update(['is_primary' => false]);
+            HouseResident::updateOrCreate(
+                ['house_id' => $data['house_id'], 'resident_id' => $resident->id],
+                ['relationship' => $data['relationship'], 'is_owner' => $data['relationship'] === 'owner', 'is_primary' => true, 'start_date' => now()->toDateString(), 'status' => 'active']
+            );
 
-            ActivityLog::record([
-                'user_id' => auth()->id(), 
-                'action' => 'create', 
-                'module' => 'residents',
-                'subject_type' => Resident::class, 
-                'subject_id' => $resident->id,
-                'description' => 'Menambah warga '.$resident->name,
-            ]);
-        }
+            if (! $this->resident && $this->create_account && $data['email']) {
+                $role = Role::where('slug', 'resident')->first();
 
-        HouseResident::where('resident_id', $resident->id)->where('status', 'active')->update(['is_primary' => false]);
-        HouseResident::updateOrCreate(
-            ['house_id' => $data['house_id'], 'resident_id' => $resident->id],
-            ['relationship' => $data['relationship'], 'is_owner' => $data['relationship'] === 'owner', 'is_primary' => true, 'start_date' => now()->toDateString(), 'status' => 'active']
-        );
+                $estateId = CurrentEstate::id();
 
-        if (! $this->resident && $this->create_account && $data['email']) {
-            $role = Role::where('slug', 'resident')->first();
-            User::firstOrCreate(['email' => $data['email']], [
-                'name' => $data['name'], 
-                'password' => Hash::make('password123'),
-                'resident_id' => $resident->id, 
-                'role_id' => $role?->id,
-                'phone' => $data['phone'] ?: null, 
-                'status' => 'active',
-            ]);
-        }
-    });
+                if ($estateId !== null && $estateId !== CurrentEstate::NONE) {
+                    try {
+                        app(SubscriptionService::class)->assertCanAddUser($estateId);
+                    } catch (\RuntimeException $e) {
+                        session()->flash('error', $e->getMessage());
 
-    session()->flash('success', 'Data warga berhasil disimpan.');
+                        return $this->redirectRoute('admin.residents.index', navigate: true);
+                    }
+                }
 
-    return $this->redirectRoute('admin.residents.index', navigate: true);
-}
+                User::firstOrCreate(['email' => $data['email']], [
+                    'name' => $data['name'],
+                    'password' => Hash::make('password123'),
+                    'resident_id' => $resident->id,
+                    'role_id' => $role?->id,
+                    'phone' => $data['phone'] ?: null,
+                    'status' => 'active',
+                ]);
+            }
+        });
+
+        session()->flash('success', 'Data warga berhasil disimpan.');
+
+        return $this->redirectRoute('admin.residents.index', navigate: true);
+    }
 
     #[Layout('layouts.admin', ['title' => 'Form Warga'])]
     public function render()

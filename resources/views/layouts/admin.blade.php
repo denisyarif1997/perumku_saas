@@ -131,6 +131,31 @@
                 </div>
             </div>
         </header>
+        @php
+            $subBanner = null;
+            $subEstateId = \App\Support\CurrentEstate::id();
+            if (auth()->check() && ! auth()->user()->hasRole('super_admin') && is_int($subEstateId) && $subEstateId > 0) {
+                try {
+                    $subSvc = app(\App\Services\Billing\SubscriptionService::class);
+                    $sub = $subSvc->forEstate($subEstateId);
+                    if ($sub) {
+                        $sub = $subSvc->refreshStatus($sub);
+                        if ($sub->status === 'trial' && $sub->trialDaysLeft() <= 3) {
+                            $subBanner = 'Trial tersisa '.$sub->trialDaysLeft().' hari. Buka Langganan untuk lanjutkan paket.';
+                        } elseif (in_array($sub->status, ['past_due', 'suspended'], true)) {
+                            $subBanner = 'Langganan bermasalah ('.$sub->status.'). Selesaikan pembayaran di halaman Langganan.';
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $subBanner = null;
+                }
+            }
+        @endphp
+        @if ($subBanner && ! request()->routeIs('subscription.*'))
+            <div class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-[13px] font-semibold text-amber-900">
+                {{ $subBanner }} <a href="{{ route('subscription.index') }}" class="underline">Buka Langganan</a>
+            </div>
+        @endif
         <main class="mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-6 lg:px-8 lg:pb-10 lg:pt-8">{{ $slot }}</main>
     </div>
 </div>
