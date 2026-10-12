@@ -47,10 +47,11 @@ class ResidentInvitationService
         }
 
         $token = Str::random(48);
+        $residentId = isset($data['resident_id']) && $data['resident_id'] !== '' ? (int) $data['resident_id'] : null;
 
         $invitation = DB::transaction(fn () => ResidentInvitation::create([
             'housing_estate_id' => $estateId,
-            'resident_id' => $data['resident_id'] ?? null,
+            'resident_id' => $residentId,
             'house_id' => $house->id,
             'invited_by' => $inviter->id,
             'name' => trim((string) $data['name']),
