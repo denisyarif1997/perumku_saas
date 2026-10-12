@@ -161,7 +161,7 @@ class ResidentInvitationService
     public function waLink(ResidentInvitation $invitation, string $url): string
     {
         $estate = $invitation->estate?->name ?? 'perumahan';
-        $text = "Halo {$invitation->name}, Anda diundang bergabung ke aplikasi {$estate}.\n".
+        $text = "Halo {$invitation->name}, Anda diundang bergabung ke aplikasi Perumku untuk perumahan {$estate}.\n".
             "Klik link ini untuk membuat akun (berlaku 7 hari):\n{$url}";
 
         return 'https://wa.me/?text='.rawurlencode($text);
