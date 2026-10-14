@@ -265,7 +265,7 @@
 
                 <div class="mt-10 flex flex-wrap justify-center gap-2.5">
                     @foreach ([
-                        'Admin', 'Finance', 'RT', 'RW', 'Security', 'Maintenance', 'Pengelola', 'Warga',
+                        'Admin', 'Bendahara', 'RT', 'RW', 'Warga',
                     ] as $role)
                         <span class="rounded-full border border-[#E2E8F0] bg-white px-4 py-2 text-[14px] font-semibold text-[#334155] shadow-sm">
                             {{ $role }}
