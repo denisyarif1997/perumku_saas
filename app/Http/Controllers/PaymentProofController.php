@@ -35,7 +35,9 @@ class PaymentProofController extends Controller
 
         if (! empty($blob)) {
             $mime = $payment->proof_mime ?: 'image/jpeg';
-            $name = $payment->proof_name ?: ('bukti-'.$payment->payment_number.'.jpg');
+            $rawName = $payment->proof_name ?: ('bukti-'.$payment->payment_number.'.jpg');
+            // Sanitasi nama file untuk Content-Disposition (hindari CRLF/header injection).
+            $name = substr((string) preg_replace('/[^A-Za-z0-9._-]+/', '_', basename($rawName)), 0, 100) ?: 'bukti.jpg';
 
             // Keamanan: hanya izinkan gambar.
             if (! str_starts_with($mime, 'image/')) {
@@ -47,6 +49,7 @@ class PaymentProofController extends Controller
                 'Content-Length' => strlen($blob),
                 'Content-Disposition' => 'inline; filename="'.$name.'"',
                 'Cache-Control' => 'private, max-age=3600',
+                'X-Content-Type-Options' => 'nosniff',
             ]);
         }
 

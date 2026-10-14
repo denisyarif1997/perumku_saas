@@ -27,6 +27,7 @@ class Show extends Component
      */
     public function addResponse(): void
     {
+        $this->complaint->refresh();
         $this->authorize('view', $this->complaint);
 
         $data = $this->validate([
@@ -60,6 +61,7 @@ class Show extends Component
      */
     public function confirmResolved(): void
     {
+        $this->complaint->refresh();
         $this->authorize('view', $this->complaint);
 
         if (in_array($this->complaint->status, ['resolved', 'closed'], true)) {
@@ -90,6 +92,9 @@ class Show extends Component
     #[Layout('layouts.resident', ['title' => 'Detail Pengaduan'])]
     public function render()
     {
+        $this->complaint->refresh();
+        $this->authorize('view', $this->complaint);
+
         return view('livewire.resident.complaints.show', [
             'complaint' => $this->complaint->load(['house.block', 'responses.user', 'responses.resident', 'assignee']),
         ]);

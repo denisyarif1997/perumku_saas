@@ -37,6 +37,7 @@ class Show extends Component
      */
     public function vote(): void
     {
+        $this->post->refresh();
         $this->authorize('vote', $this->post);
 
         $user = auth()->user();
@@ -144,6 +145,7 @@ class Show extends Component
      */
     public function editVote(): void
     {
+        $this->post->refresh();
         $this->authorize('vote', $this->post);
 
         if (! $this->post->isPollOpen()) {
@@ -159,6 +161,7 @@ class Show extends Component
      */
     public function closePoll(): void
     {
+        $this->post->refresh();
         $this->authorize('closePoll', $this->post);
 
         $this->post->update(['poll_is_closed' => ! $this->post->poll_is_closed]);
@@ -184,7 +187,9 @@ class Show extends Component
      */
     public function addComment(): void
     {
+        $this->post->refresh();
         $this->authorize('create', PostComment::class);
+        $this->authorize('view', $this->post);
 
         $user = auth()->user();
         abort_if(! $user->resident_id, 403, 'Akun tidak terhubung dengan data warga.');
@@ -235,7 +240,9 @@ class Show extends Component
      */
     public function deleteComment(int $id): void
     {
-        $comment = PostComment::findOrFail($id);
+        $this->post->refresh();
+        $this->authorize('view', $this->post);
+        $comment = PostComment::where('post_id', $this->post->id)->findOrFail($id);
         $this->authorize('delete', $comment);
 
         DB::transaction(function () use ($comment) {
@@ -261,6 +268,7 @@ class Show extends Component
      */
     public function deletePost()
     {
+        $this->post->refresh();
         $this->authorize('delete', $this->post);
 
         $post = $this->post;
@@ -289,6 +297,9 @@ class Show extends Component
     #[Layout('layouts.resident', ['title' => 'Detail Postingan'])]
     public function render()
     {
+        $this->post->refresh();
+        $this->authorize('view', $this->post);
+
         $post = $this->post->load(['author', 'resident.houseResidents.house', 'comments.author', 'comments.resident']);
 
         // Suara dan hasil polling hanya dihitung untuk yang berhak melihatnya,

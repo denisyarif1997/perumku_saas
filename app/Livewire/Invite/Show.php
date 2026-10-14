@@ -5,6 +5,7 @@ namespace App\Livewire\Invite;
 use App\Models\ResidentInvitation;
 use App\Services\ResidentInvitationService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use RuntimeException;
@@ -49,6 +50,14 @@ class Show extends Component
             return;
         }
 
+        // Batasi tebakan token/password per IP agar link undangan tidak di-brute force.
+        $throttleKey = 'invite-accept|'.request()->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 10)) {
+            $this->addError('token', 'Terlalu banyak percobaan. Coba lagi dalam '.RateLimiter::availableIn($throttleKey).' detik.');
+
+            return;
+        }
+
         $data = $this->validate([
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:100'],
@@ -65,11 +74,13 @@ class Show extends Component
         try {
             $user = $service->accept($this->invitation->fresh(), $data);
         } catch (RuntimeException $e) {
+            RateLimiter::hit($throttleKey, 60);
             $this->addError('email', $e->getMessage());
 
             return;
         }
 
+        RateLimiter::clear($throttleKey);
         Auth::login($user);
         session()->regenerate();
 

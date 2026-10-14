@@ -14,7 +14,11 @@ class Profile extends Component
 
     public string $phone = '';
 
+    public string $current_password = '';
+
     public string $new_password = '';
+
+    public string $new_password_confirmation = '';
 
     public function mount(): void
     {
@@ -28,19 +32,31 @@ class Profile extends Component
         $data = $this->validate([
             'name' => ['required', 'string', 'max:100'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'new_password' => ['nullable', 'string', 'min:8'],
+            'current_password' => ['nullable', 'string', 'required_with:new_password'],
+            'new_password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ], [
+            'current_password.required_with' => 'Password saat ini wajib diisi untuk mengganti password.',
+            'new_password.min' => 'Password baru minimal 8 karakter.',
+            'new_password.confirmed' => 'Konfirmasi password baru tidak cocok.',
         ]);
 
         $user = Auth::user();
         $user->update(['name' => $data['name'], 'phone' => $data['phone'] ?: null]);
         if (! empty($data['new_password'])) {
-            $user->update(['password' => Hash::make($data['new_password'])]);
+            if (! Hash::check($data['current_password'] ?? '', $user->password)) {
+                $this->addError('current_password', 'Password saat ini salah.');
+
+                return;
+            }
+            // Cast 'hashed' di model yang melakukan hashing — jangan Hash::make di sini.
+            $user->update(['password' => $data['new_password']]);
+            Auth::logoutOtherDevices($data['current_password']);
         }
         if ($user->resident) {
             $user->resident->update(['name' => $data['name'], 'phone' => $data['phone'] ?: null]);
         }
 
-        $this->reset('new_password');
+        $this->reset('current_password', 'new_password', 'new_password_confirmation');
         session()->flash('success', 'Profil berhasil disimpan.');
     }
 

@@ -71,7 +71,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/onboarding', Onboarding::class)->name('onboarding');
     // Webhook pembayaran langganan SaaS (tanpa auth, verifikasi signature di controller).
     Route::post('/webhooks/subscription/{gateway}', [SubscriptionWebhookController::class, 'handle'])
-        ->name('subscription-webhook')->withoutMiddleware(['auth', 'active']);
+        ->name('subscription-webhook')->withoutMiddleware(['auth', 'active'])
+        ->middleware('throttle:30,1');
 });
 
 Route::middleware(['auth', 'active'])->group(function () {

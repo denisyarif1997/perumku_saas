@@ -39,16 +39,15 @@ class Register extends Component
         $email = strtolower(trim($data['email']));
         $existing = User::query()->where('email', $email)->first();
 
-        // Email milik pendaftar pending → lanjutkan onboarding, bukan duplikat.
-        if ($existing && $existing->status === 'pending') {
-            Auth::login($existing);
-            session()->regenerate();
-
-            return $this->redirectRoute('onboarding', navigate: true);
-        }
-
+        // Keamanan: jangan auto-login akun pending hanya karena email cocok.
+        // Siapa pun yang tahu email pending korban bisa mengambil alih akun.
+        // Pemilik sah tetap bisa melanjutkan lewat login normal (password/OTP).
         if ($existing) {
-            $this->addError('email', 'Email sudah terdaftar. Silakan masuk.');
+            if ($existing->status === 'pending') {
+                $this->addError('email', 'Email ini sudah mengajukan pendaftaran. Silakan masuk untuk melanjutkan.');
+            } else {
+                $this->addError('email', 'Email sudah terdaftar. Silakan masuk.');
+            }
 
             return;
         }

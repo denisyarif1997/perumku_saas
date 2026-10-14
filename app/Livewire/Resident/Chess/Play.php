@@ -32,7 +32,7 @@ class Play extends Component
             403
         );
 
-        $this->game = $game;
+        $this->game = $game->fresh() ?? $game;
 
         // Penonton langsung disuguhi panel histori agar bisa mengikuti jalannya permainan.
         if (! $game->isPlayer(auth()->id())) {
@@ -45,6 +45,10 @@ class Play extends Component
      */
     public function tapSquare(int $index): void
     {
+        // Refresh + cek ulang setiap aksi: cegah tampering public $game.
+        $this->game->refresh();
+        abort_unless($this->game->exists, 404);
+
         // Mode replay riwayat: papan terkunci agar tidak bingung dengan posisi live.
         if ($this->replayAt !== null) {
             $this->dispatch('notify', type: 'error', message: 'Mode lihat histori — tekan "Kembali Live" untuk bermain.');
@@ -118,6 +122,7 @@ class Play extends Component
 
     public function resign(): void
     {
+        $this->game->refresh();
         abort_unless($this->game->isActive() && $this->game->isPlayer(auth()->id()), 403);
 
         $this->game->resign(auth()->id());
@@ -208,6 +213,12 @@ class Play extends Component
     #[Layout('layouts.resident', ['title' => 'Main Catur'])]
     public function render()
     {
+        $this->game->refresh();
+        abort_unless(
+            $this->game->isPlayer(auth()->id()) || $this->game->status !== 'pending',
+            403
+        );
+
         $moves = $this->game->moves ?? [];
         $board = $this->game->board;
 

@@ -87,6 +87,16 @@ class Form extends Component
             'nik.unique' => 'NIK sudah terdaftar dalam sistem.',
         ]);
 
+        // Cegah lintas-estate: rumah harus milik estate admin (kecuali platform).
+        $estateId = CurrentEstate::id();
+        if ($estateId !== null && $estateId !== CurrentEstate::NONE) {
+            abort_unless(
+                House::whereKey($data['house_id'])->where('housing_estate_id', $estateId)->exists(),
+                403,
+                'Rumah bukan bagian dari perumahan Anda.'
+            );
+        }
+
         DB::transaction(function () use ($data) {
             if ($this->resident) {
                 $this->resident->update([
@@ -156,7 +166,8 @@ class Form extends Component
 
                 User::firstOrCreate(['email' => $data['email']], [
                     'name' => $data['name'],
-                    'password' => Hash::make('password123'),
+                    // Cast 'hashed' yang hash — beri plaintext agar tidak double-hash.
+                    'password' => 'password123',
                     'resident_id' => $resident->id,
                     'role_id' => $role?->id,
                     'phone' => $data['phone'] ?: null,
@@ -173,8 +184,16 @@ class Form extends Component
     #[Layout('layouts.admin', ['title' => 'Form Warga'])]
     public function render()
     {
+        // Dropdown rumah dibatasi ke estate sendiri agar tidak bocor/enum.
+        $estateId = CurrentEstate::id();
+        $houses = House::with('block')->orderBy('house_number')
+            ->when(
+                $estateId !== null && $estateId !== CurrentEstate::NONE,
+                fn ($q) => $q->where('housing_estate_id', $estateId)
+            )->get();
+
         return view('livewire.admin.residents.form', [
-            'houses' => House::with('block')->orderBy('house_number')->get(),
+            'houses' => $houses,
         ]);
     }
 }

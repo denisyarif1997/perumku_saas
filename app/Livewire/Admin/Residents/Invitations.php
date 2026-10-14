@@ -84,6 +84,13 @@ class Invitations extends Component
 
         $invitation = ResidentInvitation::findOrFail($id);
 
+        // Cegah IDOR lintas-estate: undangan bukan milik estate admin.
+        $estateId = CurrentEstate::id();
+        if ($estateId !== null && $estateId !== CurrentEstate::NONE
+            && (int) $invitation->housing_estate_id !== (int) $estateId) {
+            abort(403, 'Undangan bukan milik perumahan Anda.');
+        }
+
         try {
             $service->revoke($invitation, auth()->user());
             session()->flash('status', 'Undangan dibatalkan.');

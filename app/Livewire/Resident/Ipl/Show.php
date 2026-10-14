@@ -39,9 +39,9 @@ class Show extends Component
         // Warga hanya boleh mengakses tagihan milik huniannya.
         abort_unless($this->belongsToResident($billing), 403);
 
-        $this->billing = $billing;
+        $this->billing = $billing->fresh() ?? $billing;
         $this->payment_date = now()->toDateString();
-        $this->amount = (string) $billing->remaining();
+        $this->amount = (string) $this->billing->remaining();
     }
 
     protected function belongsToResident(Billing $billing): bool
@@ -60,6 +60,9 @@ class Show extends Component
     public function submitPayment(): void
     {
         abort_unless(auth()->user()->resident_id, 403);
+
+        // Muat ulang dari DB + cek ulang: cegah tampering public property Livewire.
+        $this->billing->refresh();
         abort_unless($this->belongsToResident($this->billing), 403);
 
         if (! in_array($this->billing->status, ['unpaid', 'partial'], true)) {
@@ -91,6 +94,14 @@ class Show extends Component
             return;
         }
 
+        // Idempotency sederhana: tolak bila sudah ada pending di tagihan ini
+        // (mencegah double-submit / double-click membuat 2 pembayaran).
+        if ($this->billing->payments()->where('status', 'pending')->exists()) {
+            session()->flash('info', 'Sudah ada konfirmasi pembayaran menunggu verifikasi untuk tagihan ini.');
+
+            return;
+        }
+
         // Simpan bukti bayar sebagai BLOB di database (gambar, maks 2 MB).
         $proofBlob = null;
         $proofMime = null;
@@ -100,7 +111,9 @@ class Show extends Component
         if ($this->proof) {
             $proofBlob = file_get_contents($this->proof->getRealPath());
             $proofMime = $this->proof->getMimeType() ?: 'image/jpeg';
-            $proofName = $this->proof->getClientOriginalName();
+            // Sanitasi nama file: tanpa path + hanya karakter aman (hindari header injection).
+            $proofName = (string) preg_replace('/[^A-Za-z0-9._-]+/', '_', basename((string) $this->proof->getClientOriginalName()));
+            $proofName = substr($proofName !== '' ? $proofName : 'bukti.jpg', 0, 100);
             $proofSize = $this->proof->getSize();
 
             // Validasi ganda: hanya gambar & maks 2 MB (2 * 1024 * 1024 byte).
@@ -153,6 +166,9 @@ class Show extends Component
 
     public function deletePayment(int $id): void
     {
+        // Refresh dulu agar cek milik memakai data terbaru, bukan state client.
+        $this->billing->refresh();
+
         $payment = $this->billing->payments()->findOrFail($id);
 
         $this->authorize('delete', $payment);
@@ -171,6 +187,11 @@ class Show extends Component
     #[Layout('layouts.resident', ['title' => 'Detail Tagihan'])]
     public function render()
     {
+        // Re-otorisasi setiap render: public property Livewire bisa diubah client.
+        abort_unless(auth()->user()?->resident_id, 403);
+        $this->billing->refresh();
+        abort_unless($this->belongsToResident($this->billing), 403);
+
         return view('livewire.resident.ipl.show', [
             'billing' => $this->billing->load(['house.block', 'iplRate']),
             'payments' => $this->billing->payments()->orderByDesc('id')->get(),

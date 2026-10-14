@@ -26,8 +26,14 @@
         <x-ui.field label="No. HP" :error="$errors->first('phone')">
             <input wire:model.live="phone" inputmode="tel" class="min-h-[48px] w-full rounded-2xl border border-[#EEF2F1] bg-[#F6F8F7] px-4 focus:border-teal-600">
         </x-ui.field>
+        <x-ui.field label="Password Saat Ini (wajib bila ganti password)" :error="$errors->first('current_password')">
+            <input type="password" wire:model.live="current_password" placeholder="Password saat ini" autocomplete="current-password" class="min-h-[48px] w-full rounded-2xl border border-[#EEF2F1] bg-[#F6F8F7] px-4 focus:border-teal-600">
+        </x-ui.field>
         <x-ui.field label="Password Baru (opsional)" :error="$errors->first('new_password')">
-            <input type="password" wire:model.live="new_password" placeholder="Minimal 8 karakter" class="min-h-[48px] w-full rounded-2xl border border-[#EEF2F1] bg-[#F6F8F7] px-4 focus:border-teal-600">
+            <input type="password" wire:model.live="new_password" placeholder="Minimal 8 karakter" autocomplete="new-password" class="min-h-[48px] w-full rounded-2xl border border-[#EEF2F1] bg-[#F6F8F7] px-4 focus:border-teal-600">
+        </x-ui.field>
+        <x-ui.field label="Konfirmasi Password Baru" :error="$errors->first('new_password_confirmation')">
+            <input type="password" wire:model.live="new_password_confirmation" placeholder="Ulangi password baru" autocomplete="new-password" class="min-h-[48px] w-full rounded-2xl border border-[#EEF2F1] bg-[#F6F8F7] px-4 focus:border-teal-600">
         </x-ui.field>
         <button class="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-teal-600 to-teal-700 font-semibold text-white shadow-lg shadow-teal-700/30 transition active:scale-[0.98]">
             <span wire:loading.remove>Simpan Perubahan</span><span wire:loading>Menyimpan...</span>

@@ -9,6 +9,7 @@ use App\Models\HousingEstate;
 use App\Models\IplRate;
 use App\Services\IplBillingService;
 use App\Support\Currency;
+use App\Support\CurrentEstate;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -101,6 +102,12 @@ class Generate extends Component
     {
         $estateId = $this->housing_estate_id ? (int) $this->housing_estate_id : null;
 
+        // Kunci ke estate sendiri: admin estate tidak boleh memilih rumah/estate lain.
+        $lockedEstateId = CurrentEstate::id();
+        if ($lockedEstateId !== null && $lockedEstateId !== CurrentEstate::NONE) {
+            $estateId = $lockedEstateId;
+        }
+
         return House::query()
             ->where('status', 'active')
             ->when($estateId, fn ($q) => $q->where('housing_estate_id', $estateId))
@@ -143,7 +150,27 @@ class Generate extends Component
         $month = (int) $data['period_month'];
         $year = (int) $data['period_year'];
         $rateId = $data['ipl_rate_id'] ? (int) $data['ipl_rate_id'] : null;
+
+        // Paksa estate sendiri + pastikan rumah & tarif milik estate yang sama.
+        $lockedEstateId = CurrentEstate::id();
+        if ($lockedEstateId !== null && $lockedEstateId !== CurrentEstate::NONE) {
+            $estateId = $lockedEstateId;
+        }
         $houseIds = array_map('intval', $data['selectedHouses']);
+        abort_unless(
+            House::whereIn('id', $houseIds)->where('housing_estate_id', $estateId)->count() === count($houseIds),
+            403,
+            'Rumah bukan bagian dari perumahan Anda.'
+        );
+        if ($rateId) {
+            abort_unless(
+                IplRate::whereKey($rateId)
+                    ->where(fn ($q) => $q->where('housing_estate_id', $estateId)->orWhereNull('housing_estate_id'))
+                    ->exists(),
+                403,
+                'Tarif bukan milik perumahan Anda.'
+            );
+        }
 
         $result = app(IplBillingService::class)->generate(
             $year,
@@ -187,6 +214,11 @@ class Generate extends Component
     #[Layout('layouts.admin', ['title' => 'Generate Tagihan Iuran'])]
     public function render()
     {
+        // Samakan dengan houseQuery()/generate(): admin estate dikunci ke estate sendiri.
+        $lockedEstateId = CurrentEstate::id();
+        if ($lockedEstateId !== null && $lockedEstateId !== CurrentEstate::NONE) {
+            $this->housing_estate_id = (string) $lockedEstateId;
+        }
         $estateId = $this->housing_estate_id ? (int) $this->housing_estate_id : null;
         $month = (int) $this->period_month ?: (int) now()->month;
         $year = (int) $this->period_year ?: (int) now()->year;
@@ -228,9 +260,22 @@ class Generate extends Component
 
         $rate = $rateId ? IplRate::find($rateId) : IplRate::forDate($estateId, $periodStart);
 
+        // Dropdown estate hanya menampilkan milik sendiri agar tidak bocor/enum lintas-tenant.
+        $estates = ($lockedEstateId !== null && $lockedEstateId !== CurrentEstate::NONE)
+            ? HousingEstate::whereKey($lockedEstateId)->orderBy('name')->get()
+            : HousingEstate::orderBy('name')->get();
+
+        // Dropdown tarif juga dibatasi ke global + estate sendiri.
+        $rates = IplRate::with('estate')->active()
+            ->when(
+                $lockedEstateId !== null && $lockedEstateId !== CurrentEstate::NONE,
+                fn ($q) => $q->where(fn ($qq) => $qq->where('housing_estate_id', $lockedEstateId)->orWhereNull('housing_estate_id'))
+            )
+            ->orderByDesc('effective_date')->get();
+
         return view('livewire.admin.ipl.generate', [
-            'estates' => HousingEstate::orderBy('name')->get(),
-            'rates' => IplRate::with('estate')->active()->orderByDesc('effective_date')->get(),
+            'estates' => $estates,
+            'rates' => $rates,
             'activeHouses' => $activeHouses,
             'alreadyBilled' => $alreadyBilled,
             'houses' => $houses,

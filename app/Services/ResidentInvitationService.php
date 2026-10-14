@@ -142,8 +142,15 @@ class ResidentInvitationService
 
     public function revoke(ResidentInvitation $invitation, User $actor): void
     {
-        if ($invitation->status !== 'pending') {
+        if ($invitation->status !== 'pending' && ! $invitation->isPending()) {
             throw new RuntimeException('Hanya undangan pending yang bisa dibatalkan.');
+        }
+
+        // Defense-in-depth: pastikan undangan milik estate aktor (kecuali platform).
+        $actorEstateId = $actor->housing_estate_id;
+        if ($actorEstateId !== null && ! $actor->hasRole('super_admin')
+            && (int) $invitation->housing_estate_id !== (int) $actorEstateId) {
+            throw new RuntimeException('Undangan bukan milik perumahan Anda.');
         }
 
         $invitation->forceFill(['status' => 'revoked'])->save();

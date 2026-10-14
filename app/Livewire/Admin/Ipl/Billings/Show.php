@@ -54,6 +54,8 @@ class Show extends Component
     public function recordPayment(): void
     {
         abort_unless(auth()->user()->hasPermission('manage-payment'), 403);
+        $this->billing->refresh();
+        $this->authorize('view', $this->billing);
 
         if ($this->billing->status === 'cancelled') {
             session()->flash('error', 'Tagihan sudah dibatalkan.');
@@ -341,6 +343,14 @@ class Show extends Component
 
     public function activeBilling(): void
     {
+        $this->authorize('update', $this->billing);
+
+        if ($this->billing->status !== 'cancelled') {
+            session()->flash('info', 'Hanya tagihan yang dibatalkan yang bisa diaktifkan kembali.');
+
+            return;
+        }
+
         $this->billing->update(['status' => 'unpaid']);
 
         ActivityLog::record([
@@ -358,6 +368,10 @@ class Show extends Component
     #[Layout('layouts.admin', ['title' => 'Detail Tagihan Iuran'])]
     public function render()
     {
+        // Re-otorisasi setiap render: cegah tampering public $billing.
+        $this->billing->refresh();
+        $this->authorize('view', $this->billing);
+
         return view('livewire.admin.ipl.billings.show', [
             'billing' => $this->billing->load(['house.block', 'resident', 'iplRate']),
             'payments' => $this->billing->payments()

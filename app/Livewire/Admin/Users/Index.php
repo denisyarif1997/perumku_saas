@@ -153,7 +153,8 @@ class Index extends Component
         }
 
         if (! $isUpdate) {
-            $data['password'] = Hash::make('password123');
+            // Cast 'hashed' di model yang melakukan hashing — beri plaintext di sini.
+            $data['password'] = 'password123';
             $data['status'] = 'active';
         }
 
@@ -173,7 +174,8 @@ class Index extends Component
             'subject_type' => User::class,
             'subject_id' => $user->id,
             'description' => ($isUpdate ? 'Memperbarui user ' : 'Membuat user ').$user->email,
-            'new_values' => $user->fresh()->toArray(),
+            // Jangan simpan hash password ke log.
+            'new_values' => $user->fresh()->makeHidden(['password', 'remember_token'])->toArray(),
         ]);
 
         $this->closeForm();
@@ -278,8 +280,8 @@ class Index extends Component
             return;
         }
 
-        $user->update(['password' => Hash::make('password123')]);
-        session()->flash('success', 'Password '.$user->email.' direset ke password123.');
+        $user->update(['password' => 'password123']);
+        session()->flash('success', 'Password '.$user->email.' direset ke password123. Minta user segera menggantinya.');
     }
 
     #[Layout('layouts.admin', ['title' => 'User'])]
