@@ -127,5 +127,12 @@
             Sudah punya akun?
             <a href="{{ route('login') }}" class="font-semibold text-teal-700 hover:text-teal-600">Masuk di sini</a>
         </p>
+
+        <form method="POST" action="{{ route('logout') }}" class="mt-3 text-center">
+            @csrf
+            <button type="submit" class="text-[13px] font-medium text-[#94A3B8] underline hover:text-teal-700">
+                Keluar dari akun ini / masuk dengan akun lain
+            </button>
+        </form>
     </div>
 </div>

@@ -69,6 +69,9 @@ Route::middleware(['auth'])->group(function () {
     // Pendaftar pending melengkapi data diri + perumahan (tanpa middleware
     // active agar akun pending bisa login dan mengisi onboarding).
     Route::get('/onboarding', Onboarding::class)->name('onboarding');
+    // Logout wajib bisa diakses akun pending (tanpa middleware active) agar
+    // tidak terjebak di onboarding saat ingin masuk dengan akun lain.
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     // Webhook pembayaran langganan SaaS (tanpa auth, verifikasi signature di controller).
     Route::post('/webhooks/subscription/{gateway}', [SubscriptionWebhookController::class, 'handle'])
         ->name('subscription-webhook')->withoutMiddleware(['auth', 'active'])
@@ -76,8 +79,6 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'active'])->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
     // Halaman langganan perumahan: tanpa permission manage-subscription agar
     // tetap bisa dibuka saat middleware subscription mengunci area lain
     // (mis. admin non-finance). Aksi bayar tetap dicek permission di komponen.
