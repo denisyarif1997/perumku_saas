@@ -72,6 +72,7 @@
                     </a>
                 @endif
                 <livewire:notifications />
+                <livewire:panic-alert-watcher />
                 <button type="button" data-theme-toggle
                     class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#134E4A] shadow-sm transition active:scale-95"
                     aria-label="Ganti tema">
@@ -100,7 +101,7 @@
             ['resident.forum.index', 'messages-square', 'Forum', 'resident.forum.*'],
             ['resident.inventory.index', 'package', 'Pinjam', 'resident.inventory.*'],
             ['resident.complaints.index', 'wrench', 'Aduan', 'resident.complaints.*'],
-            ['resident.info.index', 'megaphone', 'Info', 'resident.info.*'],
+            ['resident.panic', 'alert-triangle', 'Alarm Darurat', 'resident.panic'],
             ['resident.profile', 'user', 'Profil', 'resident.profile'],
         ];
     @endphp
@@ -111,6 +112,7 @@
                 @foreach ($navItems as [$route, $icon, $label, $pattern])
                     @php $active = request()->routeIs($pattern); @endphp
                     <a href="{{ route($route) }}"
+                        wire:navigate
                         class="flex min-h-[62px] w-[64px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] tracking-wide transition {{ $active ? 'bg-teal-50 font-semibold text-teal-700' : 'font-medium text-[#94A3B8] hover:text-teal-700' }}">
                         <span class="flex h-8 w-10 items-center justify-center rounded-xl transition {{ $active ? 'bg-gradient-to-br from-teal-500 to-teal-700 text-white shadow-md shadow-teal-600/30' : '' }}">
                             <i data-lucide="{{ $icon }}" class="h-[20px] w-[20px]"></i>

@@ -28,7 +28,7 @@ class RolePermissionSeeder extends Seeder
         }
 
         $permissions = [
-            'general' => ['view-dashboard', 'access-admin'],
+            'general' => ['view-dashboard', 'access-admin', 'resident-panic'],
             'master' => ['manage-houses', 'manage-residents'],
             'billing' => ['manage-billing', 'manage-payment', 'verify-payment'],
             // Langganan SaaS perumahan (trial, kuota user, invoice paket/overage).
@@ -45,6 +45,7 @@ class RolePermissionSeeder extends Seeder
         $labels = [
             'view-dashboard' => 'Lihat Dashboard',
             'access-admin' => 'Akses Area Admin',
+            'resident-panic' => 'Kirim Alarm Darurat',
             'manage-houses' => 'Kelola Rumah', 'manage-residents' => 'Kelola Warga',
             'manage-billing' => 'Kelola Tagihan', 'manage-payment' => 'Kelola Pembayaran', 'verify-payment' => 'Verifikasi Pembayaran',
             'manage-announcement' => 'Kelola Pengumuman',
@@ -134,12 +135,12 @@ class RolePermissionSeeder extends Seeder
         $map = [
             'super_admin' => array_keys($permIds),
             'admin' => array_keys($permIds),
-            'finance' => ['view-dashboard', 'access-admin', 'manage-billing', 'manage-payment', 'verify-payment', 'manage-finance'],
-            'rt' => ['view-dashboard', 'access-admin', 'manage-residents', 'manage-houses', 'manage-announcement', 'manage-event', 'manage-administration', 'manage-inventory'],
-            'rw' => ['view-dashboard', 'access-admin', 'manage-residents', 'manage-announcement', 'manage-event', 'manage-inventory'],
-            'security' => ['view-dashboard', 'access-admin', 'manage-visitor', 'manage-vehicle', 'manage-package', 'manage-emergency'],
-            'maintenance' => ['view-dashboard', 'access-admin', 'manage-complaint', 'manage-facility', 'manage-booking', 'manage-inventory'],
-            'resident' => ['view-dashboard'],
+            'finance' => ['view-dashboard', 'access-admin', 'manage-billing', 'manage-payment', 'verify-payment', 'manage-finance', 'resident-panic'],
+            'rt' => ['view-dashboard', 'access-admin', 'manage-residents', 'manage-houses', 'manage-announcement', 'manage-event', 'manage-administration', 'manage-inventory', 'resident-panic'],
+            'rw' => ['view-dashboard', 'access-admin', 'manage-residents', 'manage-announcement', 'manage-event', 'manage-inventory', 'resident-panic'],
+            'security' => ['view-dashboard', 'access-admin', 'manage-visitor', 'manage-vehicle', 'manage-package', 'manage-emergency', 'resident-panic'],
+            'maintenance' => ['view-dashboard', 'access-admin', 'manage-complaint', 'manage-facility', 'manage-booking', 'manage-inventory', 'resident-panic'],
+            'resident' => ['view-dashboard', 'resident-panic'],
         ];
 
         // Turunkan permission menu otomatis: role mendapat menu-... bila

@@ -4,7 +4,6 @@ namespace App\Livewire\Auth;
 
 use App\Models\EstateRegistration;
 use App\Models\OAuthAccount;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -210,13 +209,12 @@ class Onboarding extends Component
                 }
             }
 
-            $user->forceFill([
-                'name' => trim($data['name']),
-                'email' => $email,
-                'phone' => trim($data['phone']),
-                'role_id' => Role::query()->where('slug', 'admin')->value('id') ?? $user->role_id,
-                'status' => 'pending',
-            ])->save();
+            // Data diri & perumahan HANYA disimpan di staging (estate_registrations).
+            // Baris user tetap "cangkang" login (email/password/role/status=pending)
+            // yang sudah dibuat saat registrasi — tidak ada injeksi nama/telepon/
+            // perumahan ke tabel users sebelum superadmin menyetujui. Injeksi ke
+            // produksi (users, residents, houses, housing_estates) terjadi sekali
+            // di EstateRegistrationService::approve().
         });
 
         session()->flash('status', 'Pengajuan perumahan tersimpan. Tunggu verifikasi superadmin.');

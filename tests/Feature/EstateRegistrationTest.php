@@ -43,6 +43,8 @@ class EstateRegistrationTest extends TestCase
             'role_id' => Role::where('slug', 'admin')->value('id'),
             'status' => 'pending',
         ]);
+        $originalName = $user->name;
+        $originalPhone = $user->phone;
         $this->actingAs($user);
 
         Livewire::test(Onboarding::class)
@@ -59,10 +61,16 @@ class EstateRegistrationTest extends TestCase
         $this->assertDatabaseHas('estate_registrations', [
             'user_id' => $user->id,
             'method' => 'email',
+            'name' => 'Calon Admin',
+            'phone' => '081234567890',
             'estate_code' => 'GARDEN-CITY',
             'status' => 'pending',
         ]);
         $this->assertSame('pending', $user->fresh()->status);
+        // Data diri calon TIDAK ditulis ke tabel users saat onboarding; hanya
+        // tersimpan di staging sampai superadmin menyetujui.
+        $this->assertSame($originalName, $user->fresh()->name);
+        $this->assertSame($originalPhone, $user->fresh()->phone);
         // Belum inject ke produksi sebelum approve.
         $this->assertDatabaseMissing('housing_estates', ['code' => 'GARDEN-CITY']);
     }

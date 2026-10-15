@@ -105,6 +105,7 @@
                 <h1 class="flex-1 truncate text-lg font-bold">{{ $title }}</h1>
                 <div class="flex items-center gap-2">
                     <livewire:notifications variant="admin" />
+                    <livewire:panic-alert-watcher />
                     @if ($residentAreaRoute)
                         <a href="{{ route($residentAreaRoute) }}" wire:navigate
                             title="Beralih ke Tampilan Warga" aria-label="Beralih ke Tampilan Warga"

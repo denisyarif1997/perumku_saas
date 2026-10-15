@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Notifications\ComplaintUpdated;
+use App\Notifications\EmergencyPanicNotification;
 use App\Notifications\LoanStatusChanged;
 use App\Notifications\NewAnnouncement;
 use App\Notifications\NewCommentOnPost;
@@ -43,6 +44,7 @@ class Notifications extends Component
         NewItemLoan::class => 'pinjaman',
         LoanStatusChanged::class => 'pinjaman',
         NewAnnouncement::class => 'pengumuman',
+        EmergencyPanicNotification::class => 'laporan',
     ];
 
     public string $variant = 'resident';
@@ -151,6 +153,11 @@ class Notifications extends Component
             NewAnnouncement::class => auth()->user()->hasPermission('manage-announcement')
                 ? route('admin.info.announcements')
                 : route('resident.info.index'),
+            // Alarm darurat → staf pengelola melihat daftar laporan; warga
+            // kembali ke halaman alarm untuk melihat status kiriman mereka.
+            EmergencyPanicNotification::class => auth()->user()->hasPermission('manage-emergency')
+                ? route('admin.dashboard')
+                : route('resident.panic'),
             default => '/',
         };
     }

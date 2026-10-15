@@ -46,6 +46,7 @@ use App\Livewire\Resident\Info\Index as ResidentInfoIndex;
 use App\Livewire\Resident\Inventory\Index as ResidentInventoryIndex;
 use App\Livewire\Resident\Ipl\Index as ResidentIplIndex;
 use App\Livewire\Resident\Ipl\Show as ResidentIplShow;
+use App\Livewire\Resident\Panic;
 use App\Livewire\Resident\Profile as ResidentProfile;
 use App\Livewire\Subscription\Index as SubscriptionIndex;
 use Illuminate\Support\Facades\Route;
@@ -110,6 +111,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/chess/{game}', ResidentChessPlay::class)->name('chess.play');
         Route::get('/cash', ResidentCashIndex::class)->name('cash.index');
         Route::get('/pinjam', ResidentInventoryIndex::class)->name('inventory.index');
+        Route::get('/panic', Panic::class)->name('panic')->middleware('permission:resident-panic');
         Route::get('/profile', ResidentProfile::class)->name('profile');
     });
 

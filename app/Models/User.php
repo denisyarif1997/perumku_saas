@@ -186,4 +186,9 @@ class User extends Authenticatable
             ->where('status', 'active')
             ->whereHas('house', fn (Builder $house) => $house->where('housing_estate_id', $estateId)));
     }
+
+    public function emergencyPanics(): HasMany
+    {
+        return $this->hasMany(EmergencyPanic::class);
+    }
 }

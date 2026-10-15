@@ -1,4 +1,5 @@
 import { createIcons, icons } from 'lucide';
+import './panic-alert';
 
 /**
  * Render semua ikon Lucide (<i data-lucide="...">) pada dokumen.
