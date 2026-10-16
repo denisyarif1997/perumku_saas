@@ -92,6 +92,85 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
  * PWA: daftarkan service worker agar syarat "Install App"
  * Chrome (manifest + SW + icon) terpenuhi.
  * ========================================================= */
+/**
+ * WEB PUSH SUBSCRIBE — daftarkan perangkat agar alarm darurat
+ * tetap sampai walau tab ditutup (via Service Worker + VAPID).
+ */
+function pushBase64ToBytes(base64) {
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const raw = atob(padded.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i += 1) {
+        bytes[i] = raw.charCodeAt(i);
+    }
+    return bytes;
+}
+
+async function pushEnsureSubscription() {
+    try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            return;
+        }
+        if (!('Notification' in window) || Notification.permission === 'denied') {
+            return;
+        }
+        const reg = await navigator.serviceWorker.ready;
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) {
+            return;
+        }
+        const keyRes = await fetch('/push/vapid-key', { headers: { Accept: 'application/json' } });
+        if (!keyRes.ok) {
+            return;
+        }
+        const { publicKey } = await keyRes.json();
+        if (!publicKey) {
+            return;
+        }
+        const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: pushBase64ToBytes(publicKey).buffer,
+        });
+        await fetch('/push/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(sub.toJSON()),
+        }).catch(() => {});
+    } catch (error) {
+        console.error('[push] gagal berlangganan:', error);
+    }
+}
+
+async function pushManualEnable() {
+    try {
+        if (!('Notification' in window)) {
+            alert('Browser ini tidak mendukung notifikasi.');
+            return;
+        }
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+            alert('Izin notifikasi ditolak. Aktifkan lewat pengaturan browser/HP agar alarm tetap bunyi saat app ditutup.');
+            return;
+        }
+        await pushEnsureSubscription();
+        alert('Notifikasi darurat aktif di perangkat ini.');
+    } catch (error) {
+        console.error('[push] aktivasi manual gagal:', error);
+    }
+}
+
+document.addEventListener('pointerdown', pushEnsureSubscription, { once: true });
+document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-push-enable]')) {
+        pushManualEnable();
+    }
+});
+
 if ('serviceWorker' in navigator && !window.__perumkuSwRegistered) {
     window.__perumkuSwRegistered = true;
     window.addEventListener('load', () => {

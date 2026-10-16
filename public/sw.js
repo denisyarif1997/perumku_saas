@@ -5,7 +5,55 @@
  * yang "sembuh" sementara setelah hapus cookie).
  * Yang dicache hanya aset statis same-origin (icons, build, favicon).
  * Bump CACHE_NAME setiap ada perubahan agar cache lama dibersihkan. */
-const CACHE_NAME = 'perumku-v2';
+const CACHE_NAME = 'perumku-v3';
+
+/* =========================================================
+ * WEB PUSH — agar alarm darurat tetap sampai walau tab ditutup.
+ * SW tidak bisa memutar sirene custom; ia menampilkan notifikasi
+ * sistem (bunyi + getar bawaan OS) yang nempel sampai di-tap.
+ * Tap → buka /resident/panic → sirene in-app menyusul bunyi.
+ * ========================================================= */
+self.addEventListener('push', (event) => {
+    let data = {};
+
+    try {
+        data = event.data ? event.data.json() : {};
+    } catch {
+        data = { body: event.data ? event.data.text() : '' };
+    }
+
+    const title = data.title || 'ALARM DARURAT';
+    const url = data.url || '/resident/panic';
+
+    event.waitUntil(
+        self.registration.showNotification(title, {
+            body: data.body || 'Ada warga membutuhkan bantuan segera.',
+            tag: data.tag || 'panic',
+            renotify: true,
+            requireInteraction: true,
+            silent: false,
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            vibrate: [500, 200, 500, 200, 800],
+            data: { url },
+        })
+    );
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const url = (event.notification.data && event.notification.data.url) || '/resident/panic';
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+            const existing = wins.find((w) => w.url.includes('/resident/panic'));
+            if (existing) {
+                return existing.focus();
+            }
+            return self.clients.openWindow(url);
+        })
+    );
+});
 
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());

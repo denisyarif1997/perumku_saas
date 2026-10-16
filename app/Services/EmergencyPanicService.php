@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendPanicPush;
 use App\Models\EmergencyPanic;
 use App\Models\Resident;
 use App\Models\Scopes\BelongsToEstateScope;
@@ -175,9 +176,35 @@ class EmergencyPanicService
         // staf keamanan/pengelola + sesama warga (pengirim dikecualikan).
         // Filter estate ditulis eksplisit per query (tanpa mengandalkan
         // global scope dari sesi pengirim) agar tidak bocor ke perumahan lain.
-        User::withoutGlobalScope(BelongsToEstateScope::class)
+        $recipientIds = [];
+        $this->recipientQuery($user->id, $estateId)
+            ->orderBy('id')
+            ->chunkById(200, function ($recipients) use ($panic, $user, &$recipientIds): void {
+                foreach ($recipients as $recipient) {
+                    $recipient->notify(new EmergencyPanicNotification($panic, $user->name));
+                    $recipientIds[] = $recipient->id;
+                }
+            });
+
+        // Web Push background (bahkan saat tab ditutup) — dikirim via antrean
+        // agar tombol Kirim Alarm tetap cepat. Scope penerima sama persis.
+        $recipientIds = array_values(array_unique($recipientIds));
+
+        if ($recipientIds !== []) {
+            SendPanicPush::dispatch($panic->id, $recipientIds);
+        }
+
+        return $panic;
+    }
+
+    /**
+     * @return Builder<User>
+     */
+    protected function recipientQuery(int $senderId, int $estateId): Builder
+    {
+        return User::withoutGlobalScope(BelongsToEstateScope::class)
             ->where('status', 'active')
-            ->where('id', '!=', $user->id)
+            ->where('id', '!=', $senderId)
             ->where(function (Builder $query) use ($estateId): void {
                 $query
                     ->whereHas('role', fn (Builder $role) => $role->where('slug', 'super_admin'))
@@ -185,13 +212,7 @@ class EmergencyPanicService
                     ->orWhereHas('resident.houseResidents', fn (Builder $pivot) => $pivot
                         ->where('status', 'active')
                         ->whereHas('house', fn (Builder $house) => $house->where('housing_estate_id', $estateId)));
-            })
-            ->orderBy('id')
-            ->chunkById(200, function ($recipients) use ($panic, $user): void {
-                $recipients->each(fn (User $recipient) => $recipient->notify(new EmergencyPanicNotification($panic, $user->name)));
             });
-
-        return $panic;
     }
 
     /**

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\PaymentProofController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SubscriptionWebhookController;
 use App\Livewire\Admin\ActivityLogs\Index as ActivityLogIndex;
 use App\Livewire\Admin\Blocks\Index as BlockIndex;
@@ -80,6 +81,11 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'active'])->group(function () {
+    // Web Push: kunci publik + simpan/hapus langganan per perangkat.
+    Route::get('/push/vapid-key', [PushSubscriptionController::class, 'vapidKey'])->name('push.vapid');
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe')->middleware('throttle:30,1');
+    Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe')->middleware('throttle:30,1');
+
     // Halaman langganan perumahan: tanpa permission manage-subscription agar
     // tetap bisa dibuka saat middleware subscription mengunci area lain
     // (mis. admin non-finance). Aksi bayar tetap dicek permission di komponen.
