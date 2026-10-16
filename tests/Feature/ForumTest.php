@@ -102,18 +102,16 @@ class ForumTest extends TestCase
 
         Livewire::actingAs($resident)
             ->test(ResidentForumIndex::class)
-            ->set('title', 'Lomba kebersihan RT')
-            ->set('category', 'kegiatan')
             ->set('body', 'Ayo ikut lomba kebersihan akhir pekan ini.')
             ->call('submit')
             ->assertRedirect();
 
-        $post = Post::where('title', 'Lomba kebersihan RT')->firstOrFail();
+        $post = Post::where('body', 'Ayo ikut lomba kebersihan akhir pekan ini.')->firstOrFail();
         $this->assertSame($resident->resident_id, $post->resident_id);
 
         $this->actingAs($resident)->get(route('resident.forum.index'))
             ->assertOk()
-            ->assertSee('Lomba kebersihan RT');
+            ->assertSee('Ayo ikut lomba kebersihan akhir pekan ini.');
 
         $this->actingAs($resident)->get(route('resident.forum.show', $post))
             ->assertOk()
@@ -130,21 +128,21 @@ class ForumTest extends TestCase
         Livewire::actingAs($this->residentUser())
             ->test(ResidentForumIndex::class)
             ->assertSet('showForm', false)
-            ->assertDontSee('wire:model="title"', false)
+            ->assertDontSee('wire:submit="submit"', false)
             ->call('openForm')
             ->assertSet('showForm', true)
-            ->assertSee('Buat Postingan')
-            ->assertSee('wire:model="title"', false)
+            ->assertSee('Tulis Status')
+            ->assertDontSee('wire:model="title"', false)
             ->assertSee('wire:model.live.debounce.200ms="body"', false)
             ->assertSee('wire:submit="submit"', false)
             ->assertSee('Jadikan Polling')
             ->set('isPoll', true)
-            ->assertSee('Mode Polling')
+            ->assertSee('Polling')
             ->assertSee('wire:model.live.debounce.300ms="pollChoices.0"', false)
             ->assertSee('wire:click="addPollChoice"', false)
             ->call('closeForm')
             ->assertSet('showForm', false)
-            ->assertDontSee('wire:model="title"', false);
+            ->assertDontSee('wire:submit="submit"', false);
     }
 
     public function test_resident_can_comment_on_a_post(): void

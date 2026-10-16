@@ -341,7 +341,7 @@
                         class="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-white px-8 text-[15px] font-semibold text-[#134E4A] shadow-lg transition hover:bg-teal-50 sm:w-auto">
                         <i data-lucide="rocket" class="h-4 w-4"></i> Daftar Sekarang
                     </a>
-                    <a href="https://wa.me/6289525645332" target="_blank" rel="noopener noreferrer"
+                    <a href="https://wa.me/62881012463071" target="_blank" rel="noopener noreferrer"
                         class="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-8 text-[15px] font-semibold text-white transition hover:bg-white/20 sm:w-auto">
                         <i data-lucide="message-circle" class="h-4 w-4"></i> Tanya Dulu ke Kami
                     </a>

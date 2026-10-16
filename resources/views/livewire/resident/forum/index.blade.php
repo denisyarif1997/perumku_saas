@@ -1,4 +1,4 @@
-<div class="space-y-4">
+<div class="space-y-3">
     @if (session('success'))
         <x-ui.alert type="success" icon="check-circle-2">{{ session('success') }}</x-ui.alert>
     @endif
@@ -6,108 +6,18 @@
         <x-ui.alert type="danger" icon="alert-circle">{{ session('error') }}</x-ui.alert>
     @endif
 
-    {{-- Header + statistik ringkas --}}
-    <div class="rounded-2xl bg-teal-700 p-4 text-white">
-        <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-                <h1 class="text-[20px] font-bold leading-tight">Forum Warga</h1>
-                <p class="mt-0.5 text-[13px] text-white/70">Diskusi, tanya jawab, dan kabar antar warga</p>
-            </div>
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
-                <i data-lucide="messages-square" class="h-5 w-5"></i>
-            </span>
-        </div>
-        <div class="mt-3 grid grid-cols-3 gap-2 text-center">
-            <div class="rounded-xl bg-white/10 p-2.5">
-                <p class="text-[18px] font-bold">{{ $summary['total'] }}</p>
-                <p class="text-[11px] text-white/70">Diskusi</p>
-            </div>
-            <div class="rounded-xl bg-white/10 p-2.5">
-                <p class="text-[18px] font-bold">{{ $summary['today'] }}</p>
-                <p class="text-[11px] text-white/70">Hari ini</p>
-            </div>
-            <div class="rounded-xl bg-white/10 p-2.5">
-                <p class="text-[18px] font-bold">{{ $summary['mine'] }}</p>
-                <p class="text-[11px] text-white/70">Milik saya</p>
-            </div>
-        </div>
-    </div>
-
-    {{-- Komposer cepat ala sosmed --}}
+    {{-- Tulis status --}}
     <button type="button" wire:click="openForm"
         class="flex w-full items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-3 text-left active:bg-slate-50">
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-700 text-[14px] font-bold text-white">
             {{ strtoupper(substr(auth()->user()->name ?? 'W', 0, 1)) }}
         </span>
         <span class="min-w-0 flex-1 truncate rounded-full bg-slate-100 px-4 py-2.5 text-[14px] text-[#64748B]">
-            Apa yang ingin dibagikan ke warga?
-        </span>
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-700 text-white">
-            <i data-lucide="plus" class="h-5 w-5"></i>
+            Apa yang sedang terjadi di perumahan?
         </span>
     </button>
 
-    {{-- Pencarian + urutan --}}
-    <div class="flex gap-2">
-        <div class="relative min-w-0 flex-1">
-            <i data-lucide="search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]"></i>
-            <input wire:model.live.debounce.300ms="search" type="search" placeholder="Cari diskusi..."
-                class="min-h-[48px] w-full rounded-2xl border border-[#E2E8F0] bg-white pl-10 pr-3 text-[15px] outline-none focus:border-teal-600">
-        </div>
-        <select wire:model.live="sortBy" aria-label="Urutkan"
-            class="min-h-[48px] w-[128px] shrink-0 rounded-2xl border border-[#E2E8F0] bg-white px-2 text-[14px]">
-            <option value="latest">Terbaru</option>
-            <option value="discussed">Ramai</option>
-        </select>
-    </div>
-
-    {{-- Chip kategori --}}
-    <div class="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        <button type="button" wire:click="setCategory('')"
-            class="shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold transition {{ $categoryFilter === '' ? 'bg-teal-700 text-white' : 'border border-[#E2E8F0] bg-white text-[#64748B]' }}">
-            Semua
-        </button>
-        @foreach ($categories as $value => $label)
-            <button type="button" wire:click="setCategory('{{ $value }}')"
-                class="shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold transition {{ $categoryFilter === $value ? 'bg-teal-700 text-white' : 'border border-[#E2E8F0] bg-white text-[#64748B]' }}">
-                {{ $label }}
-            </button>
-        @endforeach
-    </div>
-
-    {{-- Chip ruang lingkup + status filter --}}
-    <div class="flex gap-2">
-        <button type="button" wire:click="setScope('')"
-            class="flex-1 rounded-xl px-2 py-2.5 text-[13px] font-semibold transition {{ $scopeFilter === '' ? 'bg-teal-700 text-white' : 'border border-[#E2E8F0] bg-white text-[#64748B]' }}">
-            Semua
-        </button>
-        <button type="button" wire:click="setScope('mine')"
-            class="flex-1 rounded-xl px-2 py-2.5 text-[13px] font-semibold transition {{ $scopeFilter === 'mine' ? 'bg-teal-700 text-white' : 'border border-[#E2E8F0] bg-white text-[#64748B]' }}">
-            Milik saya
-        </button>
-        <button type="button" wire:click="setScope('today')"
-            class="flex-1 rounded-xl px-2 py-2.5 text-[13px] font-semibold transition {{ $scopeFilter === 'today' ? 'bg-teal-700 text-white' : 'border border-[#E2E8F0] bg-white text-[#64748B]' }}">
-            Hari ini
-        </button>
-        <button type="button" wire:click="setScope('pinned')"
-            class="flex-1 rounded-xl px-2 py-2.5 text-[13px] font-semibold transition {{ $scopeFilter === 'pinned' ? 'bg-teal-700 text-white' : 'border border-[#E2E8F0] bg-white text-[#64748B]' }}">
-            Disematkan
-        </button>
-    </div>
-
-    @if ($isFiltering)
-        <div class="flex items-center justify-between gap-2 rounded-xl bg-slate-100 px-3 py-2 text-[13px]">
-            <span class="min-w-0 flex-1 truncate text-[#64748B]">Filter aktif{{ $search ? ': “'.$search.'”' : '' }}</span>
-            <button type="button" wire:click="resetFilter" class="shrink-0 font-semibold underline">Reset</button>
-        </div>
-    @endif
-
-    <div wire:loading.flex wire:target="search,categoryFilter,scopeFilter,sortBy" class="items-center gap-2 text-[13px] text-[#64748B]">
-        <span class="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-teal-700"></span>
-        Memuat diskusi...
-    </div>
-
-    {{-- Feed diskusi --}}
+    {{-- Feed status --}}
     <div class="space-y-3">
         @forelse ($posts as $post)
             <article class="rounded-2xl border border-[#E2E8F0] bg-white p-4 transition active:bg-slate-50 {{ $post->is_pinned ? 'ring-1 ring-sky-200' : '' }}">
@@ -129,63 +39,38 @@
                 </div>
 
                 <a href="{{ route('resident.forum.show', $post) }}" wire:navigate class="mt-2.5 block">
-                    <h2 class="text-[16px] font-bold leading-snug">{{ $post->title }}</h2>
-                    <p class="mt-1 line-clamp-3 text-[14px] leading-relaxed text-[#64748B]">{{ $post->body }}</p>
+                    <p class="whitespace-pre-line text-[15px] leading-relaxed">{{ $post->body }}</p>
                 </a>
 
-                <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
-                    <x-ui.badge color="{{ $post->categoryColor() }}">{{ $post->categoryLabel() }}</x-ui.badge>
+                <div class="mt-2.5 flex items-center gap-1.5 text-[12px] text-[#64748B]">
                     @if ($post->is_poll)
-                        <x-ui.badge color="purple"><i data-lucide="bar-chart-3" class="h-3 w-3"></i> Polling</x-ui.badge>
-                        <x-ui.badge color="{{ $post->isPollOpen() ? 'green' : 'red' }}">
-                            {{ $post->isPollOpen() ? 'Berlangsung' : 'Ditutup' }}
-                        </x-ui.badge>
+                        <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 text-purple-600"></i>
+                        <span>Polling · {{ $post->poll_voters_count ?? 0 }} memilih</span>
+                        <span>·</span>
                     @endif
-                    <span class="inline-flex items-center gap-1 text-[12px] text-[#64748B]">
-                        <i data-lucide="message-circle" class="h-3.5 w-3.5"></i>
-                        {{ $post->comments_count ?? 0 }} komentar
-                    </span>
+                    <i data-lucide="message-circle" class="h-3.5 w-3.5"></i>
+                    <span>{{ $post->comments_count ?? 0 }} komentar</span>
                 </div>
 
                 @if ($post->is_poll)
-                    <ul class="mt-2 space-y-1 rounded-xl bg-slate-50 p-2.5 text-[13px] text-[#334155]">
-                        @foreach (array_slice($post->pollOptions(), 0, 3, true) as $optionLabel)
-                            <li class="flex items-start gap-1.5">
-                                <i data-lucide="circle" class="mt-1 h-2 w-2 shrink-0 text-slate-400"></i>
-                                <span class="min-w-0 flex-1">{{ $optionLabel }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
                     <p class="mt-1.5 text-[12px] text-[#64748B]">
-                        {{ $post->poll_voters_count ?? 0 }} warga sudah memilih
+                        Ketuk status untuk ikut polling
                     </p>
                 @endif
 
-                <div class="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
+                <div class="mt-3">
                     <a href="{{ route('resident.forum.show', $post) }}" wire:navigate
-                        class="flex min-h-[42px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 text-[14px] font-semibold text-[#0F172A]">
-                        <i data-lucide="{{ $post->is_poll ? 'bar-chart-3' : 'message-circle' }}" class="h-4 w-4"></i>
-                        {{ $post->is_poll ? 'Ikut Polling' : 'Diskusi' }}
+                        class="flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl bg-slate-100 text-[14px] font-semibold text-[#0F172A]">
+                        <i data-lucide="message-circle" class="h-4 w-4"></i>
+                        Komentar
                     </a>
-                    @can('delete', $post)
-                        <button type="button" wire:click="delete({{ $post->id }})" wire:confirm="Hapus postingan ini beserta komentarnya?"
-                            class="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-700" title="Hapus postingan">
-                            <i data-lucide="trash-2" class="h-4 w-4"></i>
-                        </button>
-                    @endcan
                 </div>
             </article>
         @empty
-            <x-ui.empty-state icon="messages-square" title="Belum ada diskusi" subtitle="Jadilah yang pertama membuka diskusi di forum warga.">
-                @if (! $isFiltering)
-                    <button wire:click="openForm" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 font-semibold text-white">
-                        <i data-lucide="plus" class="h-4 w-4"></i> Buat Postingan Pertama
-                    </button>
-                @else
-                    <button wire:click="resetFilter" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] px-6 font-semibold">
-                        <i data-lucide="rotate-ccw" class="h-4 w-4"></i> Reset filter
-                    </button>
-                @endif
+            <x-ui.empty-state icon="messages-square" title="Belum ada status" subtitle="Jadilah yang pertama berbagi kabar.">
+                <button wire:click="openForm" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 font-semibold text-white">
+                    <i data-lucide="plus" class="h-4 w-4"></i> Tulis Status Pertama
+                </button>
             </x-ui.empty-state>
         @endforelse
     </div>
@@ -202,8 +87,8 @@
                             {{ strtoupper(substr(auth()->user()->name ?? 'W', 0, 1)) }}
                         </span>
                         <div class="min-w-0">
-                            <p class="text-[16px] font-bold leading-tight">{{ $isPoll ? 'Polling Baru' : 'Postingan Baru' }}</p>
-                            <p class="text-[12px] text-[#64748B]">{{ $isPoll ? 'Ajukan suara dari warga' : 'Bagikan ke semua warga' }}</p>
+                            <p class="text-[16px] font-bold leading-tight">Tulis Status</p>
+                            <p class="text-[12px] text-[#64748B]">Bagikan ke semua warga</p>
                         </div>
                     </div>
                     <button type="button" wire:click="closeForm" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F0]">
@@ -212,50 +97,21 @@
                 </div>
 
                 <form wire:submit="submit" class="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 pb-8">
-                    <div>
-                        <div class="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-                            @foreach ($categories as $value => $label)
-                                <button type="button" wire:click="$set('category', '{{ $value }}')"
-                                    class="shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold transition {{ $category === $value ? 'bg-teal-700 text-white' : 'border border-[#E2E8F0] bg-white text-[#64748B]' }}">
-                                    {{ $label }}
-                                </button>
-                            @endforeach
-                        </div>
-                        @error('category') <p class="mt-1 text-[13px] text-red-600">{{ $message }}</p> @enderror
-                    </div>
-                    <x-ui.field label="Judul" :error="$errors->first('title')">
-                        <input wire:model="title" maxlength="150" placeholder="Contoh: Gotong royong akhir pekan"
-                            class="min-h-[48px] w-full rounded-xl border border-[#E2E8F0] px-3 text-[15px] outline-none focus:border-teal-600">
-                        <p class="mt-1 text-right text-[12px] text-[#64748B]">{{ mb_strlen($title) }}/150</p>
-                    </x-ui.field>
-
-                    <x-ui.field label="Isi Postingan" :error="$errors->first('body')">
-                        <textarea wire:model.live.debounce.200ms="body" rows="6" maxlength="3000" placeholder="Ceritakan sesuatu yang ingin dibagikan ke warga..."
+                    <x-ui.field label="Status" :error="$errors->first('body')">
+                        <textarea wire:model.live.debounce.200ms="body" rows="5" maxlength="3000" placeholder="Apa yang sedang terjadi di perumahan?"
                             class="w-full rounded-xl border border-[#E2E8F0] px-3 py-2.5 text-[15px] outline-none focus:border-teal-600"></textarea>
                         <p class="mt-1 text-right text-[12px] text-[#64748B]">{{ mb_strlen($body) }}/3000</p>
                     </x-ui.field>
 
-                    {{-- Mode polling --}}
+                    {{-- Polling opsional (tersembunyi di balik 1 tombol) --}}
+                    @if ($isPoll)
                     <div class="rounded-xl border border-[#E2E8F0] p-3">
-                        @if (! $isPoll)
-                            <button type="button" wire:click="$set('isPoll', true)"
-                                class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-purple-50 font-semibold text-purple-700">
-                                <i data-lucide="bar-chart-3" class="h-4 w-4"></i> Jadikan Polling
-                            </button>
-                        @else
                             <div class="flex items-center justify-between gap-2">
-                                <p class="flex items-center gap-1.5 text-[14px] font-bold text-purple-700">
-                                    <i data-lucide="bar-chart-3" class="h-4 w-4"></i> Mode Polling
-                                </p>
-                                <button type="button" wire:click="disablePoll" title="Kembali ke Posting Biasa"
-                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F0]">
-                                    <i data-lucide="x" class="h-4 w-4"></i>
-                                </button>
+                                <p class="text-[14px] font-bold">Polling</p>
+                                <button type="button" wire:click="disablePoll" class="text-[13px] font-semibold text-red-600">Batalkan</button>
                             </div>
 
-                            <p class="mt-1 text-[12px] text-[#64748B]">Minimal dua pilihan, hasil baru tampil setelah warga memilih.</p>
-
-                            <div class="mt-3 space-y-2">
+                            <div class="mt-2 space-y-2">
                                 @foreach ($pollChoices as $index => $choice)
                                     <div class="flex items-center gap-2">
                                         <input type="text" wire:model.live.debounce.300ms="pollChoices.{{ $index }}" maxlength="100"
@@ -273,35 +129,17 @@
                             @error('pollChoices') <p class="mt-1 text-[13px] text-red-600">{{ $message }}</p> @enderror
                             @error('pollChoices.*') <p class="mt-1 text-[13px] text-red-600">{{ $message }}</p> @enderror
 
-                            <button type="button" wire:click="addPollChoice" @disabled(count($pollChoices) >= 6)
+                            <button type="button" wire:click="addPollChoice" @disabled(count($pollChoices) >= $maxPollChoices)
                                 class="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#E2E8F0] font-semibold text-[#64748B] disabled:opacity-40">
                                 <i data-lucide="plus" class="h-4 w-4"></i> Tambah Pilihan
                             </button>
-
-                            <div class="mt-3 grid grid-cols-2 gap-2">
-                                <label class="block">
-                                    <span class="text-[13px] font-semibold">Jenis</span>
-                                    <select wire:model.live="pollType"
-                                        class="mt-1 min-h-[44px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[14px]">
-                                        <option value="single">Pilih satu</option>
-                                        <option value="multiple">Pilih beberapa</option>
-                                    </select>
-                                </label>
-                                <label class="block">
-                                    <span class="text-[13px] font-semibold">Ditutup</span>
-                                    <select wire:model.live="pollDuration"
-                                        class="mt-1 min-h-[44px] w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[14px]">
-                                        <option value="1">1 hari</option>
-                                        <option value="3">3 hari</option>
-                                        <option value="7">7 hari</option>
-                                        <option value="14">14 hari</option>
-                                        <option value="30">30 hari</option>
-                                        <option value="0">Tanpa batas</option>
-                                    </select>
-                                </label>
-                            </div>
-                        @endif
                     </div>
+                    @else
+                        <button type="button" wire:click="$set('isPoll', true)"
+                            class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-slate-100 text-[14px] font-semibold text-[#334155]">
+                            <i data-lucide="bar-chart-3" class="h-4 w-4"></i> Jadikan Polling
+                        </button>
+                    @endif
 
                     <div class="grid grid-cols-2 gap-2 pb-safe">
                         <button type="button" wire:click="closeForm"

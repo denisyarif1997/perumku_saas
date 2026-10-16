@@ -1,11 +1,11 @@
 <div class="space-y-6">
     <div>
         <h1 class="text-2xl font-bold text-[#134E4A]">Alarm Darurat</h1>
-        <p class="text-sm text-[#64748B]">Tekan tombol di bawah saat Anda membutuhkan bantuan segera. Alarm beserta keterangan Anda akan muncul sebagai push notifikasi di akun sesama warga satu perumahan dan petugas keamanan.</p>
+        <p class="text-sm text-[#64748B]">Tekan tombol di bawah saat Anda membutuhkan bantuan segera. Alarm beserta keterangan Anda akan muncul sebagai Notifikasi ke akun warga yang lain.</p>
         <button type="button" data-push-enable
             class="mt-3 inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition active:scale-95">
             <i data-lucide="bell-ring" class="h-4 w-4"></i>
-            Aktifkan Notifikasi Darurat (agar bunyi walau app ditutup)
+            Aktifkan Notifikasi Darurat
         </button>
     </div>
 

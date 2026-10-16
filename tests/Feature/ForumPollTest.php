@@ -154,8 +154,6 @@ class ForumPollTest extends TestCase
     {
         Livewire::actingAs($this->resident('warga.a.1@housinghub.id'))
             ->test(ResidentForumIndex::class)
-            ->set('title', 'Lomba kebersihan RT')
-            ->set('category', 'kegiatan')
             ->set('body', 'Ayo ikut lomba kebersihan akhir pekan ini.')
             ->set('isPoll', true)
             ->set('pollType', 'multiple')
@@ -165,7 +163,7 @@ class ForumPollTest extends TestCase
             ->assertHasNoErrors()
             ->assertRedirect();
 
-        $post = Post::where('title', 'Lomba kebersihan RT')->firstOrFail();
+        $post = Post::where('body', 'Ayo ikut lomba kebersihan akhir pekan ini.')->firstOrFail();
 
         $this->assertTrue($post->is_poll);
         $this->assertSame('multiple', $post->poll_type);
@@ -181,14 +179,13 @@ class ForumPollTest extends TestCase
     {
         Livewire::actingAs($this->resident('warga.a.1@housinghub.id'))
             ->test(ResidentForumIndex::class)
-            ->set('title', 'Polling cacat')
             ->set('body', 'Isi polling.')
             ->set('isPoll', true)
             ->set('pollChoices', ['Setuju', 'Setuju'])
             ->call('submit')
             ->assertHasErrors('pollChoices');
 
-        $this->assertDatabaseMissing('posts', ['title' => 'Polling cacat']);
+        $this->assertDatabaseMissing('posts', ['body' => 'Isi polling.']);
     }
 
     public function test_resident_can_build_the_poll_inside_the_composer(): void
@@ -197,7 +194,7 @@ class ForumPollTest extends TestCase
             ->test(ResidentForumIndex::class)
             ->call('openForm')
             ->set('isPoll', true)
-            ->assertSee('Mode Polling')
+            ->assertSee('Polling')
             ->call('addPollChoice')
             ->call('addPollChoice')
             ->assertSet('pollChoices', ['', '', '', ''])
@@ -221,14 +218,13 @@ class ForumPollTest extends TestCase
     {
         Livewire::actingAs($this->resident('warga.a.1@housinghub.id'))
             ->test(ResidentForumIndex::class)
-            ->set('title', 'Polling belum lengkap')
             ->set('body', 'Satu pilihan masih kosong.')
             ->set('isPoll', true)
             ->set('pollChoices', ['Setuju', ' '])
             ->call('submit')
             ->assertHasErrors('pollChoices.1');
 
-        $this->assertDatabaseMissing('posts', ['title' => 'Polling belum lengkap']);
+        $this->assertDatabaseMissing('posts', ['body' => 'Satu pilihan masih kosong.']);
     }
 
     public function test_forum_feed_shows_the_poll_card_and_voter_count(): void
@@ -244,10 +240,8 @@ class ForumPollTest extends TestCase
             ->get(route('resident.forum.index'))
             ->assertOk()
             ->assertSee('Polling')
-            ->assertSee('Berlangsung')
-            ->assertSee('Tidak setuju')
-            ->assertSee('1 warga sudah memilih')
-            ->assertSee('Ikut Polling');
+            ->assertSee('memilih')
+            ->assertSee('Komentar');
     }
 
     public function test_radio_selection_keeps_selected_options_an_array(): void

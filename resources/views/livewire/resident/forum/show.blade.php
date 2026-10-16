@@ -7,34 +7,25 @@
     @endif
 
     <a href="{{ route('resident.forum.index') }}" wire:navigate class="inline-flex items-center gap-2 text-[14px] font-semibold text-[#64748B]">
-        <i data-lucide="arrow-left" class="h-4 w-4"></i> Kembali ke forum
+        <i data-lucide="arrow-left" class="h-4 w-4"></i> Kembali
     </a>
 
-    {{-- Isi postingan --}}
-    <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4 {{ $post->is_pinned ? 'border-sky-300 ring-1 ring-sky-100' : '' }}">
-        <div class="flex flex-wrap items-center gap-1.5">
-            @if ($post->is_pinned)
-                <x-ui.badge color="sky"><i data-lucide="pin" class="h-3 w-3"></i> Disematkan</x-ui.badge>
-            @endif
-            <x-ui.badge color="{{ $post->categoryColor() }}">{{ $post->categoryLabel() }}</x-ui.badge>
-        </div>
-        <p class="mt-2 text-[18px] font-bold leading-snug">{{ $post->title }}</p>
-        <p class="mt-2 whitespace-pre-line text-[14px] text-[#334155]">{{ $post->body }}</p>
-        <div class="mt-3 flex items-center justify-between gap-2 border-t border-[#E2E8F0] pt-3">
-            <div class="flex min-w-0 items-center gap-2">
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[13px] font-bold">{{ strtoupper(substr($post->authorName(), 0, 1)) }}</div>
-                <div class="min-w-0">
-                    <p class="truncate text-[13px] font-semibold">{{ $post->authorName() }}@if ($house = $post->authorHouseLabel()) <span class="font-normal text-[#64748B]">· {{ $house }}</span>@endif</p>
-                    <p class="text-[12px] text-[#64748B]">{{ $post->created_at->format('d/m/Y H:i') }}</p>
-                </div>
+    {{-- Status --}}
+    <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4">
+        <div class="flex items-center gap-2.5">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[14px] font-bold">{{ strtoupper(substr($post->authorName(), 0, 1)) }}</div>
+            <div class="min-w-0 flex-1">
+                <p class="truncate text-[14px] font-semibold">{{ $post->authorName() }}@if ($house = $post->authorHouseLabel()) <span class="font-normal text-[#64748B]">· Rumah {{ $house }}</span>@endif</p>
+                <p class="text-[12px] text-[#64748B]">{{ $post->created_at->diffForHumans() }}</p>
             </div>
             @if (auth()->user()->can('delete', $post))
-                <button type="button" wire:click="deletePost" wire:confirm="Hapus postingan ini beserta semua komentarnya?"
-                    class="flex min-h-[36px] items-center gap-1 rounded-xl border border-red-200 px-3 text-[13px] font-semibold text-red-700">
-                    <i data-lucide="trash-2" class="h-4 w-4"></i> Hapus
+                <button type="button" wire:click="deletePost" wire:confirm="Hapus status ini?"
+                    title="Hapus" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600">
+                    <i data-lucide="trash-2" class="h-4 w-4"></i>
                 </button>
             @endif
         </div>
+        <p class="mt-2 whitespace-pre-line text-[15px] leading-relaxed">{{ $post->body }}</p>
     </div>
     {{-- Polling --}}
     @if ($post->is_poll)

@@ -102,7 +102,7 @@
             ['resident.forum.index', 'messages-square', 'Forum', 'resident.forum.*'],
             ['resident.inventory.index', 'package', 'Pinjam', 'resident.inventory.*'],
             ['resident.complaints.index', 'wrench', 'Aduan', 'resident.complaints.*'],
-            ['resident.panic', 'alert-triangle', 'Alarm Darurat', 'resident.panic'],
+            ['resident.panic', 'alert-triangle', 'Panic Button', 'resident.panic'],
             ['resident.profile', 'user', 'Profil', 'resident.profile'],
         ];
     @endphp

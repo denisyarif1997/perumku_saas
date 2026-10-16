@@ -17,17 +17,7 @@ class Index extends Component
 {
     use WithPagination;
 
-    public string $search = '';
-
-    public string $categoryFilter = '';
-
-    public string $scopeFilter = '';
-
-    public string $sortBy = 'latest';
-
     public bool $showForm = false;
-
-    public string $title = '';
 
     public string $body = '';
 
@@ -45,45 +35,6 @@ class Index extends Component
     /** Lama polling dibuka, dalam hari. "0" berarti tanpa batas waktu. */
     public string $pollDuration = '3';
 
-    public function updatedSearch(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedCategoryFilter(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedScopeFilter(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedSortBy(): void
-    {
-        $this->resetPage();
-    }
-
-    public function setCategory(string $value): void
-    {
-        $this->categoryFilter = $value;
-        $this->resetPage();
-    }
-
-    public function setScope(string $value): void
-    {
-        $this->scopeFilter = $value;
-        $this->resetPage();
-    }
-
-    public function resetFilter(): void
-    {
-        $this->reset(['search', 'categoryFilter', 'scopeFilter']);
-        $this->sortBy = 'latest';
-        $this->resetPage();
-    }
-
     public function openForm(): void
     {
         $this->authorize('create', Post::class);
@@ -94,7 +45,7 @@ class Index extends Component
     public function closeForm(): void
     {
         $this->showForm = false;
-        $this->reset(['title', 'body']);
+        $this->reset(['body']);
         $this->category = 'umum';
         $this->isPoll = false;
         $this->pollChoices = ['', ''];
@@ -168,7 +119,9 @@ class Index extends Component
     }
 
     /**
-     * Warga membuat postingan baru di forum.
+     * Warga membuat status baru. Judul tidak lagi diisi manual:
+     * diambil otomatis dari 8 kata pertama isi agar data lama
+     * (admin/notifikasi/pencarian yang memakai title) tetap jalan.
      */
     public function submit(): void
     {
@@ -178,17 +131,13 @@ class Index extends Component
         abort_if(! $user->resident_id, 403, 'Akun tidak terhubung dengan data warga.');
 
         $data = $this->validate([
-            'title' => ['required', 'string', 'max:150'],
             'body' => ['required', 'string', 'max:3000'],
-            'category' => ['required', 'in:'.implode(',', array_keys(Post::categories()))],
             'pollChoices' => $this->isPoll
                 ? ['array', 'min:2', 'max:'.Post::POLL_MAX_OPTIONS]
                 : ['nullable'],
             'pollChoices.*' => [$this->isPoll ? 'required' : 'nullable', 'string', 'max:100'],
         ], [
-            'title.required' => 'Judul postingan wajib diisi.',
-            'body.required' => 'Isi postingan wajib diisi.',
-            'category.required' => 'Kategori wajib dipilih.',
+            'body.required' => 'Tulis dulu statusnya.',
             'pollChoices.min' => 'Polling minimal memiliki dua pilihan.',
             'pollChoices.max' => 'Pilihan polling maksimal '.Post::POLL_MAX_OPTIONS.'.',
             'pollChoices.*.required' => 'Pilihan polling tidak boleh kosong.',
@@ -215,13 +164,17 @@ class Index extends Component
             : null;
 
         $post = DB::transaction(function () use ($data, $residentId, $estateId, $user) {
+            $body = trim($data['body']);
+            $title = implode(' ', array_slice(preg_split('/\s+/', $body) ?: [], 0, 8));
+            $title = mb_substr($title !== '' ? $title : 'Status warga', 0, 150);
+
             $post = Post::create([
                 'housing_estate_id' => $estateId,
                 'resident_id' => $residentId,
                 'user_id' => $user->id,
-                'title' => $data['title'],
-                'body' => $data['body'],
-                'category' => $data['category'],
+                'title' => $title,
+                'body' => $body,
+                'category' => 'umum',
                 'is_pinned' => false,
                 ...$this->pollAttributes(),
             ]);
@@ -287,37 +240,15 @@ class Index extends Component
     #[Layout('layouts.resident', ['title' => 'Forum Warga'])]
     public function render()
     {
-        $residentId = auth()->user()->resident_id;
-
         $query = Post::query()
             ->with(['author', 'resident.houseResidents.house'])
             ->withCount('comments')
             ->withCount(['votes as poll_voters_count' => fn (Builder $q) => $q->selectRaw('count(distinct resident_id)')])
-            ->when($this->search, fn ($q) => $q->where(function ($qq) {
-                $qq->where('title', 'like', "%{$this->search}%")
-                    ->orWhere('body', 'like', "%{$this->search}%");
-            }))
-            ->inCategory($this->categoryFilter)
-            ->when($this->scopeFilter === 'mine', fn ($q) => $q->where('resident_id', $residentId))
-            ->when($this->scopeFilter === 'pinned', fn ($q) => $q->where('is_pinned', true))
-            ->when($this->scopeFilter === 'today', fn ($q) => $q->whereDate('created_at', now()->toDateString()));
-
-        if ($this->sortBy === 'discussed') {
-            $query->orderByDesc('is_pinned')->orderBy('comments_count', 'desc')->orderByDesc('created_at');
-        } else {
-            $query->pinnedFirst();
-        }
+            ->pinnedFirst();
 
         return view('livewire.resident.forum.index', [
             'posts' => $query->paginate(10),
-            'categories' => Post::categories(),
             'maxPollChoices' => Post::POLL_MAX_OPTIONS,
-            'summary' => [
-                'total' => Post::count(),
-                'mine' => Post::where('resident_id', $residentId)->count(),
-                'today' => Post::whereDate('created_at', now()->toDateString())->count(),
-            ],
-            'isFiltering' => $this->search !== '' || $this->categoryFilter !== '' || $this->scopeFilter !== '',
         ]);
     }
 }
