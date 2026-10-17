@@ -34,11 +34,11 @@ class EmergencyPanicNotification extends Notification
         ];
     }
 
-    public function toMail(MailMessage $mail): MailMessage
-    {
-        return $mail->subject('[PERUMKU] Alert Darurat Dikirim')
-            ->line('Ada alarm darurat yang dikirim dari akun warga.')
-            ->line($this->actorName.' mengirim alert darurat.')
-            ->line('Status: open');
-    }
+    // public function toMail(MailMessage $mail): MailMessage
+    // {
+    //     return $mail->subject('[PERUMKU] Alert Darurat Dikirim')
+    //         ->line('Ada alarm darurat yang dikirim dari akun warga.')
+    //         ->line($this->actorName.' mengirim alert darurat.')
+    //         ->line('Status: open');
+    // }
 }

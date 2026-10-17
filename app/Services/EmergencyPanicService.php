@@ -231,4 +231,31 @@ class EmergencyPanicService
 
         return (int) $estateId;
     }
+
+    
+/**
+ * Riwayat emergency panic seluruh warga dalam estate aktif.
+ */
+public function historyByEstate(): Builder
+{
+    $estateId = CurrentEstate::id();
+
+    abort_if(
+        $estateId === null || $estateId === CurrentEstate::NONE,
+        403,
+        'Perumahan aktif tidak ditemukan.'
+    );
+
+    return EmergencyPanic::query()
+        ->whereHas('resident.houseResidents', function (Builder $query) use ($estateId) {
+            $query
+                ->where('status', 'active')
+                ->whereHas('house', function (Builder $house) use ($estateId) {
+                    $house->where('housing_estate_id', $estateId);
+                });
+        })
+        ->with(['user', 'resident'])
+        ->orderByDesc('created_at');
+}
+
 }

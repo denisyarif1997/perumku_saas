@@ -40,6 +40,8 @@ class Panic extends Component
         return view('livewire.resident.panic', [
             'open' => $service->openByUser(auth()->id()),
             'count' => $service->countOpenByUser(auth()->id()),
+            'history' => $service->historyByEstate()->paginate(5),
+
         ]);
     }
 
