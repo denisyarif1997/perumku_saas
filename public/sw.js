@@ -5,7 +5,9 @@
  * yang "sembuh" sementara setelah hapus cookie).
  * Yang dicache hanya aset statis same-origin (icons, build, favicon).
  * Bump CACHE_NAME setiap ada perubahan agar cache lama dibersihkan. */
-const CACHE_NAME = 'perumku-v3';
+const CACHE_NAME = 'perumku-v4';
+const CACHE_PREFIX = 'perumku-';
+const STATIC_ASSET_PATHS = ['/favicon.ico', '/favicon.svg', '/apple-touch-icon.png', '/manifest.webmanifest'];
 
 /* =========================================================
  * WEB PUSH — agar alarm darurat tetap sampai walau tab ditutup.
@@ -62,7 +64,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys()
-            .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+            .then((keys) => Promise.all(
+                keys
+                    .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+                    .map((key) => caches.delete(key))
+            ))
             .then(() => self.clients.claim())
     );
 });
@@ -82,8 +88,22 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Jangan cache endpoint dinamis Livewire / auth.
-    if (url.pathname.startsWith('/livewire') || url.pathname.startsWith('/auth')) {
+    // Navigasi wire:navigate memakai fetch dan dapat meminta HTML tanpa mode navigate.
+    // HTML dan endpoint dinamis tidak boleh masuk cache lintas sesi.
+    if (
+        request.headers.get('Accept')?.includes('text/html')
+        || url.pathname.startsWith('/livewire')
+        || url.pathname.startsWith('/auth')
+    ) {
+        return;
+    }
+
+    // Cache hanya aset publik yang lokasinya memang statis.
+    const isStaticAsset = url.pathname.startsWith('/build/')
+        || url.pathname.startsWith('/icons/')
+        || STATIC_ASSET_PATHS.includes(url.pathname);
+
+    if (!isStaticAsset) {
         return;
     }
 
@@ -93,8 +113,14 @@ self.addEventListener('fetch', (event) => {
             (cached) =>
                 cached ||
                 fetch(request).then((response) => {
-                    // Hanya simpan respons OK biasa, bukan redirect/error.
-                    if (response && response.status === 200 && response.type === 'basic') {
+                    const contentType = response.headers.get('Content-Type') || '';
+
+                    // Jangan simpan HTML meskipun server mengembalikannya dari path aset.
+                    if (
+                        response.status === 200
+                        && response.type === 'basic'
+                        && !contentType.toLowerCase().includes('text/html')
+                    ) {
                         const copy = response.clone();
                         caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
                     }
