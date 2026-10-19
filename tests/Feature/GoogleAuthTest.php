@@ -210,6 +210,29 @@ class GoogleAuthTest extends TestCase
         ]);
     }
 
+    public function test_google_callback_handles_userinfo_timeout_gracefully(): void
+    {
+        config()->set('services.google.client_id', 'test-client-id');
+        config()->set('services.google.client_secret', 'test-secret');
+        config()->set('services.google.redirect', 'http://localhost:8000/auth/google/callback');
+
+        session()->put('google_oauth', ['state' => 'valid-state', 'code_verifier' => 'verifier']);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'access-token',
+                'expires_in' => 3600,
+            ]),
+            'https://openidconnect.googleapis.com/v1/userinfo' => Http::failedConnection(),
+        ]);
+
+        $this->get(route('auth.google.callback', ['code' => 'auth-code', 'state' => 'valid-state']))
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('oauth_accounts', ['provider' => 'google']);
+    }
+
     public function test_google_callback_rejects_invalid_state(): void
     {
         app(GoogleAuthService::class);

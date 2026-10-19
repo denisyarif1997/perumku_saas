@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -67,14 +69,20 @@ class GoogleAuthService
             throw new RuntimeException('Sesi login Google tidak valid atau sudah kedaluwarsa.');
         }
 
-        $tokenResponse = Http::timeout(10)->retry(1, 200)->asForm()->post(self::TOKEN_URL, [
-            'code' => $code,
-            'client_id' => config('services.google.client_id'),
-            'client_secret' => config('services.google.client_secret'),
-            'redirect_uri' => config('services.google.redirect'),
-            'grant_type' => 'authorization_code',
-            'code_verifier' => $stored['code_verifier'],
-        ]);
+        try {
+            $tokenResponse = Http::timeout(15)->connectTimeout(10)->retry(2, 300)->asForm()->post(self::TOKEN_URL, [
+                'code' => $code,
+                'client_id' => config('services.google.client_id'),
+                'client_secret' => config('services.google.client_secret'),
+                'redirect_uri' => config('services.google.redirect'),
+                'grant_type' => 'authorization_code',
+                'code_verifier' => $stored['code_verifier'],
+            ]);
+        } catch (ConnectionException $e) {
+            Log::warning('Google OAuth token request timed out.', ['error' => $e->getMessage()]);
+
+            throw new RuntimeException('Koneksi ke Google timeout. Silakan coba lagi.');
+        }
 
         if (! $tokenResponse->successful()) {
             throw new RuntimeException('Gagal menukar kode otorisasi Google.');
@@ -87,7 +95,13 @@ class GoogleAuthService
             throw new RuntimeException('Token akses Google tidak diterima.');
         }
 
-        $profileResponse = Http::timeout(10)->retry(1, 200)->withToken($accessToken)->get(self::USERINFO_URL);
+        try {
+            $profileResponse = Http::timeout(15)->connectTimeout(10)->retry(2, 300)->withToken($accessToken)->get(self::USERINFO_URL);
+        } catch (ConnectionException $e) {
+            Log::warning('Google OAuth userinfo request timed out.', ['error' => $e->getMessage()]);
+
+            throw new RuntimeException('Koneksi ke Google timeout. Silakan coba lagi.');
+        }
 
         if (! $profileResponse->successful()) {
             throw new RuntimeException('Gagal membaca profil Google.');
