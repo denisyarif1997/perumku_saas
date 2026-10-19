@@ -6,6 +6,22 @@
         <x-ui.alert type="danger">{{ session('error') }}</x-ui.alert>
     @endif
 
+    @if ($approvedWaLink)
+        <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <div class="min-w-0 flex-1">
+                <p class="text-[14px] font-bold text-emerald-900">Pengajuan disetujui — kabari pemohon via WhatsApp</p>
+                <p class="mt-0.5 break-words text-[13px] text-emerald-800">{{ $approvedWaMessage }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{{ $approvedWaLink }}" target="_blank" rel="noopener noreferrer"
+                    class="flex min-h-[40px] items-center gap-2 rounded-xl bg-[#25D366] px-4 text-[14px] font-semibold text-white hover:brightness-95">
+                    <i data-lucide="send" class="h-4 w-4"></i> Kirim WA
+                </a>
+                <button wire:click="dismissApprovalWa" class="min-h-[40px] rounded-xl border border-emerald-200 bg-white px-3 text-[14px] font-semibold text-emerald-800">Tutup</button>
+            </div>
+        </div>
+    @endif
+
     <div class="flex flex-wrap items-center gap-3">
         <h2 class="text-lg font-bold text-[#134E4A]">Pengajuan Perumahan Baru
             @if ($pendingCount > 0)
@@ -66,6 +82,15 @@
                                     <button wire:click="startReject({{ $row->id }})" class="ml-3 font-semibold text-amber-700">Tolak</button>
                                 @else
                                     <span class="text-[13px] text-[#94A3B8]">diputus {{ $row->decided_at?->format('d M Y') ?? '-' }}</span>
+                                    @if ($row->status === 'approved')
+                                        @php($waLink = $this->approvalWaLink($row))
+                                        @if ($waLink)
+                                            <a href="{{ $waLink }}" target="_blank" rel="noopener noreferrer"
+                                                class="ml-3 inline-flex items-center gap-1 rounded-lg bg-[#25D366] px-2.5 py-1.5 text-[12px] font-semibold text-white hover:brightness-95">
+                                                <i data-lucide="send" class="h-3.5 w-3.5"></i> WA Setuju
+                                            </a>
+                                        @endif
+                                    @endif
                                 @endif
                             </td>
                         </tr>

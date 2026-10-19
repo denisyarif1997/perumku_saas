@@ -25,6 +25,10 @@ class Registrations extends Component
 
     public string $rejectReason = '';
 
+    public ?string $approvedWaLink = null;
+
+    public string $approvedWaMessage = '';
+
     #[Layout('layouts.admin', ['title' => 'Verifikasi Perumahan Baru'])]
     public function render()
     {
@@ -57,9 +61,18 @@ class Registrations extends Component
         try {
             $result = $service->approve($registration, auth()->user());
             session()->flash('status', "Perumahan {$result['estate']->name} aktif. {$result['user']->name} kini admin.");
+
+            $this->approvedWaLink = $this->approvalWaLink($registration->fresh(), $result['estate']->name, $result['user']->name);
+            $this->approvedWaMessage = $this->approvalWaMessage($registration->fresh(), $result['estate']->name, $result['user']->name);
         } catch (RuntimeException $e) {
             session()->flash('error', $e->getMessage());
         }
+    }
+
+    public function dismissApprovalWa(): void
+    {
+        $this->approvedWaLink = null;
+        $this->approvedWaMessage = '';
     }
 
     public function startReject(int $id): void
@@ -90,5 +103,33 @@ class Registrations extends Component
         }
 
         $this->cancelReject();
+    }
+
+    /**
+     * Tautan WhatsApp berisi kabar persetujuan + ajakan login.
+     * Nomor pemohon dinormalisasi ke format internasional (62...).
+     */
+    public function approvalWaLink(EstateRegistration $registration, ?string $estateName = null, ?string $adminName = null): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string) $registration->phone);
+
+        if ($digits === '') {
+            return null;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            $digits = '62'.substr($digits, 1);
+        }
+
+        return 'https://wa.me/'.$digits.'?text='.urlencode($this->approvalWaMessage($registration, $estateName, $adminName));
+    }
+
+    public function approvalWaMessage(EstateRegistration $registration, ?string $estateName = null, ?string $adminName = null): string
+    {
+        $name = $adminName ?? $registration->name;
+        $estate = $estateName ?? $registration->estate_name;
+        $loginUrl = route('login');
+
+        return "Halo {$name}, pengajuan perumahan {$estate} di Perumku sudah DISETUJUI. Silakan login di {$loginUrl} untuk mengelola perumahan Anda. Terima kasih.";
     }
 }

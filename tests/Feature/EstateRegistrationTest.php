@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Livewire\Auth\Onboarding;
 use App\Livewire\Auth\Register;
+use App\Livewire\Platform\Registrations;
 use App\Models\EstateRegistration;
 use App\Models\Role;
 use App\Models\User;
@@ -140,5 +141,40 @@ class EstateRegistrationTest extends TestCase
         $this->assertSame('rejected', $registration->fresh()->status);
         $this->assertSame('pending', $applicant->fresh()->status);
         $this->assertDatabaseMissing('housing_estates', ['code' => 'GARDEN-CITY']);
+    }
+
+    public function test_approve_builds_whatsapp_link_with_login_invite(): void
+    {
+        $this->seed();
+        $roleId = Role::where('slug', 'admin')->value('id');
+        $applicant = User::factory()->create([
+            'email' => 'calon@example.com',
+            'role_id' => $roleId,
+            'status' => 'pending',
+        ]);
+        $registration = EstateRegistration::create([
+            'user_id' => $applicant->id,
+            'method' => 'email',
+            'name' => 'Calon Admin',
+            'email' => 'calon@example.com',
+            'phone' => '081234567890',
+            'estate_code' => 'GARDEN-CITY',
+            'estate_name' => 'Garden City',
+            'status' => 'pending',
+        ]);
+        $super = User::factory()->withoutEstate()->create([
+            'role_id' => Role::where('slug', 'super_admin')->value('id'),
+            'status' => 'active',
+        ]);
+        $this->actingAs($super);
+
+        Livewire::test(Registrations::class)
+            ->set('statusFilter', 'pending')
+            ->call('approve', $registration->id)
+            ->assertSet('approvedWaLink', fn ($link) => is_string($link)
+                && str_contains($link, 'https://wa.me/6281234567890')
+                && str_contains($link, urlencode('sudah DISETUJUI'))
+                && str_contains($link, urlencode('Silakan login')))
+            ->assertSee('Kirim WA', false);
     }
 }
